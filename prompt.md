@@ -7,19 +7,23 @@ GitHub Copilotへ：
 - ジョブは1時間毎に実行され、実行結果として記録「日時」と「残りのデータ通信量」を記録する
 - ユーザはアプリへのログインなしでグラフを確認できる（GitHubへのログインはしても良い）
 - UCSSの費用以外は全て無料で実現する
-- MCSSMonitorの開発者のみがユーザの想定である
+- 開発者のみがユーザの想定である
 
 ### 技術スタック：
 - フロントエンド: Vue.js + Chart.js
 - バックエンド: node.js + GitHub Actions
-- ジョブ実行結果の保存先: Gist
-- ログイン情報の保存先: GitHub ActionのSecrets
+- データ保存: Gist（JSONフォーマット）
+- 認証情報管理: GitHub ActionのSecrets
 - グラフの表示先: GitHub Pages
+- スクレイピング: Puppeteer
 
 ### 必要な機能：
-1. メールアドレスとパスワードをGitHub ActionのSecrets上で安全に保存する
-2. GitHub Actionsでジョブを毎時実行する
-3. Gistへの記録を契機に、GitHub Pagesの面グラフを更新する
+1. メールアドレスとパスワードをGitHub ActionsのSecretsで安全に管理
+2. GitHub Actionsで1時間ごとにジョブを実行し、スクレイピングしてGistを更新
+  - `puppeteer` でUCSSの「サービスの詳細」ページにログインし、データ通信量を取得
+  - 失敗時は最大3回リトライし、エラー通知を送信
+3. Gistの更新を契機に次のGitHub Actionsを動かしてグラフを再生成
+4. 再生成したグラフをGitHub Pagesへデプロイ
 
 ### セキュリティ：
 - GitHub SecretsでUCSSのメールアドレスとパスワードを安全に管理
