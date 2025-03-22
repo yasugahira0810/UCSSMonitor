@@ -1,0 +1,56 @@
+name: UCSSMonitor Job
+
+on:
+  schedule:
+    - cron: '0 * * * *' # 毎時実行
+  workflow_dispatch:
+
+jobs:
+  scrape_and_record:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v2
+      with:
+        node-version: '14'
+
+    - name: Install dependencies
+      run: npm install
+
+    - name: Run scraper
+      env:
+        UCSS_EMAIL: ${{ secrets.UCSS_EMAIL }}
+        UCSS_PASSWORD: ${{ secrets.UCSS_PASSWORD }}
+      run: node scripts/scraper.js
+
+    - name: Update Gist
+      run: node scripts/update_gist.js
+
+  update_graph:
+    needs: scrape_and_record
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v2
+      with:
+        node-version: '14'
+
+    - name: Install dependencies
+      run: npm install
+
+    - name: Generate graph
+      run: npm run generate-graph
+
+    - name: Deploy to GitHub Pages
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./public

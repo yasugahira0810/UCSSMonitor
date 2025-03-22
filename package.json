@@ -1,0 +1,21 @@
+{
+  "name": "UCSSMonitor",
+  "version": "1.0.0",
+  "description": "A web app to monitor UCSS data usage",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "vue-cli-service serve",
+    "build": "vue-cli-service build",
+    "generate-graph": "node scripts/generate_graph.js"
+  },
+  "dependencies": {
+    "vue": "^3.0.0",
+    "chart.js": "^3.0.0",
+    "vue-chartjs": "^3.0.0",
+    "puppeteer": "^10.0.0",
+    "@octokit/rest": "^18.0.0"
+  },
+  "devDependencies": {
+    "@vue/cli-service": "^4.5.0"
+  }
+}

@@ -11,7 +11,9 @@ GitHub Copilotへ：
 
 ### 技術スタック：
 - フロントエンド: Vue.js + Chart.js
-- バックエンド: node.js + GitHub Actions
+- バックエンド: node.js
+- 初期の開発環境: devcontainer
+- 後期の開発環境: GitHub Actions
 - データ保存: Gist（JSONフォーマット）
 - 認証情報管理: GitHub ActionのSecrets
 - グラフの表示先: GitHub Pages
@@ -25,6 +27,9 @@ GitHub Copilotへ：
 5. 再生成したグラフをGitHub Pagesへデプロイ
 
 ### セキュリティ：
+
+- devcontainerでの開発では.envを使って、メールアドレス(EMAIL)とパスワード(PASSWORD)は環境変数で管理
+- .envはGitの管理対象外とすることで安全に管理
 - GitHub SecretsでUCSSのメールアドレスとパスワードを安全に管理
 - リポジトリはパブリックリポジトリ
 
@@ -37,4 +42,8 @@ GitHub Copilotへ：
 ]
 ```
 
-この仕様をもとに、ディレクトリ構成、API設計、データベーススキーマ、GitHub Actionsのワークフローの詳細を提案してください。
+### 開発の進め方
+1. devcontainer内でPuppeteerを手動実行してUCSSをスクレイピングして、標準出力に時刻と残りのデータ通信量をGistに追記する
+2. GitHub Actions内でPuppeteerを手動実行してUCSSをスクレイピングして、標準出力に時刻と残りのデータ通信量をGistに追記する
+
+この仕様をもとに、ディレクトリ構成、データベーススキーマ、GitHub Actionsのワークフローの詳細を提案してください。
