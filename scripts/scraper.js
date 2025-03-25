@@ -36,6 +36,8 @@ const remainingDataSelector = '#traffic-header > p.free-traffic > span.traffic-n
 
     await page.goto('https://my.undercurrentss.biz/clientarea.php');
 
+    // Wait for the service details link to appear
+    await page.waitForSelector(serviceDetailsLinkSelector);
     await page.click(serviceDetailsLinkSelector);
     await page.waitForNavigation();
 
