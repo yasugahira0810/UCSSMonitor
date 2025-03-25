@@ -46,5 +46,5 @@
 - ログインページのログインボタンのCSSセレクタ #login
 - ログインページのメールアドレス入力欄のCSSセレクタ #inputEmail
 - ログインページのパスワード入力欄のCSSセレクタ #inputPassword
-- ログインページから「サービス詳細」ページへのリンクのXPath　//*[@id="ClientAreaHomePagePanels-Active_Products_Services-0"]/div/div[3]/button
+- ログインページから「サービス詳細」ページへのリンクのCSSセレクタ　#ClientAreaHomePagePanels-Active_Products_Services-0 > div > div.list-group-item-actions > button
 - 「サービス詳細」ページの残りデータ通信量を示すテキストのCSSセレクタ #traffic-header > p.free-traffic > span.traffic-number

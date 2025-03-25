@@ -5,8 +5,8 @@ const fs = require('fs');
 const emailSelector = '#inputEmail';
 const passwordSelector = '#inputPassword';
 
-// Add navigation to the "Service Details" page and extract remaining data
-const serviceDetailsLinkXPath = '//*[@id="ClientAreaHomePagePanels-Active_Products_Services-0"]/div/div[3]/button';
+// Update the scraper.js file to use CSS selector for the service details link
+const serviceDetailsLinkSelector = '#ClientAreaHomePagePanels-Active_Products_Services-0 > div > div.panel-footer > button';
 const remainingDataSelector = '#traffic-header > p.free-traffic > span.traffic-number';
 
 (async () => {
@@ -42,8 +42,8 @@ const remainingDataSelector = '#traffic-header > p.free-traffic > span.traffic-n
     await page.goto('https://my.undercurrentss.biz/clientarea.php');
 
     // Wait for the service details link to appear and ensure it is interactable
-    await page.waitForXPath(serviceDetailsLinkXPath, { visible: true });
-    const [serviceDetailsButton] = await page.$x(serviceDetailsLinkXPath);
+    await page.waitForSelector(serviceDetailsLinkSelector, { visible: true });
+    const serviceDetailsButton = await page.$(serviceDetailsLinkSelector);
     if (serviceDetailsButton) {
       // Ensure the button is interactable
       const isDisabled = await page.evaluate(button => button.disabled, serviceDetailsButton);
