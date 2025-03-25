@@ -59,13 +59,13 @@ async function logErrorDetails(page, errorMessage) {
         process.exit(1);
     }
 
-    // Log the first and last character of the email and the length of the password
+    // Removed the log output for email and password
     const email = process.env.UCSS_EMAIL;
     const password = process.env.UCSS_PASSWORD;
 
     if (email && password) {
-        console.log(`Email: ${email[0]}***${email[email.length - 1]}`);
-        console.log(`Password length: ${password.length}`);
+        // console.log(`Email: ${email[0]}***${email[email.length - 1]}`);
+        // console.log(`Password length: ${password.length}`);
     } else {
         console.error('環境変数 UCSS_EMAIL または UCSS_PASSWORD が設定されていません');
         await browser.close();
@@ -83,10 +83,6 @@ async function logErrorDetails(page, errorMessage) {
         await browser.close();
         process.exit(1);
     }
-
-    // Log the HTML of the page after login for debugging
-    const pageContent = await page.content();
-    console.log('ログイン後のページHTML:', pageContent);
 
     // Check if login was successful
     if (await isLoggedIn(page)) {
