@@ -92,6 +92,17 @@ async function logErrorDetails(page, errorMessage) {
     if (await isLoggedIn(page)) {
       console.log('ログイン成功');
 
+      // Wait for the specified element after login
+      const postLoginSelector = '#ClientAreaHomePagePanels-Active_Products_Services-0 > div > div.list-group-item-actions > button';
+      try {
+          await page.waitForSelector(postLoginSelector, { visible: true, timeout: 10000 });
+          console.log('ログイン後の要素が確認されました');
+      } catch (error) {
+          await logErrorDetails(page, 'ログイン後の要素が見つかりません');
+          await browser.close();
+          process.exit(1);
+      }
+
       // Proceed with the rest of the script
       await page.waitForSelector(serviceDetailsLinkSelector, { visible: true });
       await page.evaluate((selector) => {
