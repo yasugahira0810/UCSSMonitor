@@ -15,6 +15,15 @@ const fs = require('fs');
 
     console.log('ログイン成功');
 
+    // Record login success
+    const successData = {
+      date: new Date().toISOString(),
+      status: 'ログイン成功'
+    };
+    fs.writeFileSync('login_status.json', JSON.stringify(successData, null, 2));
+
+    console.log('ログイン成功データ:', JSON.stringify(successData, null, 2));
+
     await page.goto('https://my.undercurrentss.biz/clientarea.php');
 
     const remainingData = await page.evaluate(() => {
@@ -27,8 +36,20 @@ const fs = require('fs');
     };
 
     fs.writeFileSync('data.json', JSON.stringify(data, null, 2));
+
+    console.log('データ取得成功:', JSON.stringify(data, null, 2));
   } catch (error) {
     console.error('ログイン失敗:', error);
+
+    // Record login failure
+    const failureData = {
+      date: new Date().toISOString(),
+      status: 'ログイン失敗',
+      error: error.message
+    };
+    fs.writeFileSync('login_status.json', JSON.stringify(failureData, null, 2));
+
+    console.log('ログイン失敗データ:', JSON.stringify(failureData, null, 2));
   } finally {
     await browser.close();
   }
