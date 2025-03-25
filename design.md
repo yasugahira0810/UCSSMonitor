@@ -18,9 +18,9 @@
 ### 必要な機能：
 - メールアドレスとパスワードをGitHub ActionsのSecretsで安全に管理
 - GitHub Actionsで1時間ごとにジョブを実行し、PuppeteerでUCSSにログイン
-- ログインしたらログインしたページのURLをログに出力
+- ログインしてログイン後のページに遷移したら、URLとログイン成功のメッセージをログに出力する
 - ログイン失敗時にはエラーメッセージが表示されるので、その文字列を検出して、ログイン失敗を伝える
-- ログインページに「サービスも詳細」という文字列が表示されるまで待つ
+- ログイン後のページに「サービスも詳細」という文字列が表示されるまで待つ
 - UCSSの「サービスの詳細」ページへ遷移してデータ通信量を取得
 - Gistの更新を契機に次のGitHub Actionsを動かしてグラフを再生成
 - 再生成したグラフをGitHub Pagesへデプロイ
@@ -43,6 +43,7 @@
 
 ### UCSSのURLやCSSセレクタやXPath
 - [ログインページ](https://my.undercurrentss.biz/index.php?rp=/login)
+- [ログイン後のページ](https://my.undercurrentss.biz/clientarea.php)
 - ログインページのログインボタンのCSSセレクタ #login
 - ログインページのメールアドレス入力欄のCSSセレクタ #inputEmail
 - ログインページのパスワード入力欄のCSSセレクタ #inputPassword

@@ -99,9 +99,10 @@ async function logErrorDetails(page, errorMessage) {
         process.exit(1);
     }
 
-    // Check if login was successful
+    // Log the URL and success message after successful login
     if (await isLoggedIn(page)) {
       console.log('ログイン成功');
+      console.log('現在のURL:', page.url());
 
       // Wait for the specified element after login
       const postLoginSelector = '#ClientAreaHomePagePanels-Active_Products_Services-0 > div > div.list-group-item-actions > button';
