@@ -55,13 +55,13 @@ async function logErrorDetails(page, errorMessage) {
         process.exit(1);
     }
 
-    // Removed the log output for email and password
     const email = process.env.UCSS_EMAIL;
     const password = process.env.UCSS_PASSWORD;
 
+    // Log the first and last characters of the email for debugging
     if (email && password) {
-        // console.log(`Email: ${email[0]}***${email[email.length - 1]}`);
-        // console.log(`Password length: ${password.length}`);
+        console.log(`Email: ${email[0]}***${email[email.length - 1]}`);
+        console.log(`Password length: ${password.length}`);
     } else {
         console.error('環境変数 UCSS_EMAIL または UCSS_PASSWORD が設定されていません');
         await browser.close();
@@ -82,15 +82,19 @@ async function logErrorDetails(page, errorMessage) {
 
     // Check for login failure message
     const loginFailureMessage = 'Login Details Incorrect. Please try again.';
+    // Update the XPath selector usage to ensure proper handling
     try {
-        const errorMessageElement = await page.$x(`//*[contains(text(), '${loginFailureMessage}')]`);
-        if (errorMessageElement.length > 0) {
+        const errorMessageElements = await page.$x(`//*[contains(text(), '${loginFailureMessage}')]`);
+        if (errorMessageElements && errorMessageElements.length > 0) {
             await logErrorDetails(page, 'ログイン失敗: "Login Details Incorrect. Please try again." が表示されました');
             await browser.close();
             process.exit(1);
         }
     } catch (error) {
         console.error('ログイン失敗メッセージの検出中にエラーが発生しました:', error);
+        await logErrorDetails(page, 'XPath セレクターの処理中にエラーが発生しました');
+        await browser.close();
+        process.exit(1);
     }
 
     // Check if login was successful
