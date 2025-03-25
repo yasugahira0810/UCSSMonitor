@@ -6,7 +6,7 @@ const emailSelector = '#inputEmail';
 const passwordSelector = '#inputPassword';
 
 // Add navigation to the "Service Details" page and extract remaining data
-const serviceDetailsLinkSelector = '#ClientAreaHomePagePanels-Active_Products_Services-0 > div';
+const serviceDetailsLinkSelector = '#ClientAreaHomePagePanels-Active_Products_Services-0 > div > div.list-group-item-actions > button';
 const remainingDataSelector = '#traffic-header > p.free-traffic > span.traffic-number';
 
 (async () => {
