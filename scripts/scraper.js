@@ -6,7 +6,7 @@ const emailSelector = '#inputEmail';
 const passwordSelector = '#inputPassword';
 
 // Add navigation to the "Service Details" page and extract remaining data
-const serviceDetailsLinkSelector = '#ClientAreaHomePagePanels-Active_Products_Services-0 > div > div.list-group-item-actions > button';
+const serviceDetailsLinkXPath = '//*[@id="ClientAreaHomePagePanels-Active_Products_Services-0"]/div/div[3]/button';
 const remainingDataSelector = '#traffic-header > p.free-traffic > span.traffic-number';
 
 (async () => {
@@ -41,10 +41,22 @@ const remainingDataSelector = '#traffic-header > p.free-traffic > span.traffic-n
 
     await page.goto('https://my.undercurrentss.biz/clientarea.php');
 
-    // Wait for the service details link to appear
-    await page.waitForSelector(serviceDetailsLinkSelector);
-    await page.click(serviceDetailsLinkSelector);
-    await page.waitForNavigation();
+    // Wait for the service details link to appear and ensure it is interactable
+    await page.waitForXPath(serviceDetailsLinkXPath, { visible: true });
+    const [serviceDetailsButton] = await page.$x(serviceDetailsLinkXPath);
+    if (serviceDetailsButton) {
+      // Ensure the button is interactable
+      const isDisabled = await page.evaluate(button => button.disabled, serviceDetailsButton);
+      if (!isDisabled) {
+        await serviceDetailsButton.click();
+        // Wait for navigation to complete by checking for a specific element on the next page
+        await page.waitForSelector(remainingDataSelector, { timeout: 10000 });
+      } else {
+        throw new Error('Service Details button is disabled');
+      }
+    } else {
+      throw new Error('Service Details button not found');
+    }
 
     const remainingData = await page.evaluate((selector) => {
       return document.querySelector(selector).innerText;

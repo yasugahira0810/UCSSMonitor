@@ -1,6 +1,9 @@
 name: UCSSMonitor Job
 
 on:
+  push: # Add push event trigger
+    branches:
+      - main # Specify the branch to trigger on
   schedule:
     - cron: '0 * * * *' # 毎時実行
   workflow_dispatch:

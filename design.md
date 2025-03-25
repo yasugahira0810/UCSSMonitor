@@ -40,11 +40,11 @@
 ]
 ```
 
-### UCSSのURLやCSSセレクタ
+### UCSSのURLやCSSセレクタやXPath
 - [ログインページ](https://my.undercurrentss.biz/index.php?rp=/login)
 - [ログインした直後のページ](https://my.undercurrentss.biz/clientarea.php)
 - ログインページのログインボタンのCSSセレクタ #login
 - ログインページのメールアドレス入力欄のCSSセレクタ #inputEmail
 - ログインページのパスワード入力欄のCSSセレクタ #inputPassword
-- ログインページから「サービス詳細」ページへのリンクのCSSセレクタ　#ClientAreaHomePagePanels-Active_Products_Services-0 > div > div.list-group-item-actions > button
+- ログインページから「サービス詳細」ページへのリンクのXPath　//*[@id="ClientAreaHomePagePanels-Active_Products_Services-0"]/div/div[3]/button
 - 「サービス詳細」ページの残りデータ通信量を示すテキストのCSSセレクタ #traffic-header > p.free-traffic > span.traffic-number
