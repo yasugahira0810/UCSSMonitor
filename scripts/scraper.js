@@ -25,22 +25,6 @@ const remainingDataSelector = '#traffic-header > p.free-traffic > span.traffic-n
 
     console.log('ログイン成功');
 
-    // Log the current page URL after login
-    const currentUrl = page.url();
-    console.log('ログイン後のURL:', currentUrl);
-
-    // Record login success
-    const successData = {
-      date: new Date().toISOString(),
-      status: 'ログイン成功',
-      url: currentUrl
-    };
-    fs.writeFileSync('login_status.json', JSON.stringify(successData, null, 2));
-
-    console.log('ログイン成功データ:', JSON.stringify(successData, null, 2));
-
-    await page.goto('https://my.undercurrentss.biz/clientarea.php');
-
     // Wait for the service details button to appear and click it
     await page.waitForSelector(serviceDetailsLinkSelector, { visible: true });
     await page.evaluate((selector) => {
