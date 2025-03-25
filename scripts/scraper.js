@@ -23,6 +23,10 @@ const remainingDataSelector = '#traffic-header > p.free-traffic > span.traffic-n
 
     await page.waitForNavigation();
 
+    // Log the HTML of the page after login for debugging
+    const pageContent = await page.content();
+    console.log('ログイン後のページHTML:', pageContent);
+
     console.log('ログイン成功');
 
     // Wait for the service details button to appear and click it
@@ -49,13 +53,16 @@ const remainingDataSelector = '#traffic-header > p.free-traffic > span.traffic-n
 
     console.log('データ取得成功:', JSON.stringify(data, null, 2));
   } catch (error) {
+    const currentUrl = page.url();
     console.error('ログイン失敗:', error);
+    console.error('失敗時のURL:', currentUrl);
 
     // Record login failure
     const failureData = {
       date: new Date().toISOString(),
       status: 'ログイン失敗',
-      error: error.message
+      error: error.message,
+      url: currentUrl
     };
     fs.writeFileSync('login_status.json', JSON.stringify(failureData, null, 2));
 
