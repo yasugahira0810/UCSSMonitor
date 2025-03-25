@@ -23,17 +23,13 @@ async function isLoggedIn(page) {
 // Function to log detailed error information
 async function logErrorDetails(page, errorMessage) {
   const currentUrl = page.url();
-  const pageContent = await page.content();
   console.error(errorMessage);
   console.error('現在のURL:', currentUrl);
-  console.error('現在のページHTML:', pageContent);
-
   const failureData = {
     date: new Date().toISOString(),
     status: 'エラー',
     error: errorMessage,
-    url: currentUrl,
-    html: pageContent
+    url: currentUrl
   };
   fs.writeFileSync('error_details.json', JSON.stringify(failureData, null, 2));
   console.log('エラーデータが記録されました:', JSON.stringify(failureData, null, 2));
