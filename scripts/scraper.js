@@ -80,6 +80,19 @@ async function logErrorDetails(page, errorMessage) {
         process.exit(1);
     }
 
+    // Check for login failure message
+    const loginFailureMessage = 'Login Details Incorrect. Please try again.';
+    try {
+        const errorMessageElement = await page.$x(`//*[contains(text(), '${loginFailureMessage}')]`);
+        if (errorMessageElement.length > 0) {
+            await logErrorDetails(page, 'ログイン失敗: "Login Details Incorrect. Please try again." が表示されました');
+            await browser.close();
+            process.exit(1);
+        }
+    } catch (error) {
+        console.error('ログイン失敗メッセージの検出中にエラーが発生しました:', error);
+    }
+
     // Check if login was successful
     if (await isLoggedIn(page)) {
       console.log('ログイン成功');
