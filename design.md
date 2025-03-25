@@ -42,3 +42,5 @@
 - [ログインページ](https://my.undercurrentss.biz/index.php?rp=/login)
 - [ログインした直後のページ](https://my.undercurrentss.biz/clientarea.php)
 - ログインページのログインボタンのCSSセレクタ #login
+- ログインページのメールアドレス入力欄のCSSセレクタ #inputEmail
+- ログインページのパスワード入力欄のCSSセレクタ #inputPassword

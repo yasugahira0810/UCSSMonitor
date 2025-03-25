@@ -1,6 +1,10 @@
 const puppeteer = require('puppeteer');
 const fs = require('fs');
 
+// Update the scraper.js file to include the CSS selectors for email and password input fields
+const emailSelector = '#inputEmail';
+const passwordSelector = '#inputPassword';
+
 (async () => {
   const browser = await puppeteer.launch({
     args: ['--no-sandbox', '--disable-setuid-sandbox']
@@ -9,8 +13,8 @@ const fs = require('fs');
   try {
     await page.goto('https://my.undercurrentss.biz/index.php?rp=/login');
 
-    await page.type('#email', process.env.UCSS_EMAIL);
-    await page.type('#password', process.env.UCSS_PASSWORD);
+    await page.type(emailSelector, process.env.UCSS_EMAIL);
+    await page.type(passwordSelector, process.env.UCSS_PASSWORD);
     await page.click('#login');
 
     await page.waitForNavigation();
