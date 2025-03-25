@@ -88,9 +88,12 @@ async function logErrorDetails(page, errorMessage) {
     try {
         const errorMessageElement = await page.$(loginFailureSelector);
         if (errorMessageElement) {
-            await logErrorDetails(page, 'ログイン失敗: エラーメッセージが表示されました');
-            await browser.close();
-            process.exit(1);
+            const errorMessageText = await page.evaluate(el => el.innerText, errorMessageElement);
+            if (errorMessageText.includes('ログイン失敗') || errorMessageText.includes('エラー')) {
+                await logErrorDetails(page, `ログイン失敗: エラーメッセージが表示されました - ${errorMessageText}`);
+                await browser.close();
+                process.exit(1);
+            }
         }
     } catch (error) {
         console.error('ログイン失敗メッセージの検出中にエラーが発生しました:', error);
