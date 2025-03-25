@@ -8,7 +8,6 @@ const SELECTORS = {
   serviceDetailsLink: '#ClientAreaHomePagePanels-Active_Products_Services-0 > div > div.list-group-item-actions > button',
   remainingData: '#traffic-header > p.free-traffic > span.traffic-number',
   loginFailureMessage: 'body > div.app-main > div.main-body > div > div > div > div > div > div',
-  postLoginText: 'サービスの詳細'
 };
 
 async function logErrorDetails(page, errorMessage) {
@@ -78,14 +77,10 @@ async function login(page, email, password) {
 
 async function waitForPostLoginText(page) {
   try {
-    await page.waitForFunction(
-      text => document.body.innerText.includes(text),
-      { timeout: 10000 },
-      SELECTORS.postLoginText
-    );
-    console.log('「サービスの詳細」という文字列が確認されました');
+    await page.waitForSelector(SELECTORS.serviceDetailsLink, { timeout: 10000 });
+    console.log('「サービスの詳細」ページへのリンクが確認されました');
   } catch (error) {
-    await logErrorDetails(page, '「サービスの詳細」という文字列が見つかりません');
+    await logErrorDetails(page, '「サービスの詳細」ページへのリンクが見つかりません');
     throw error;
   }
 }
