@@ -28,6 +28,26 @@ async function isLoggedIn(page) {
   try {
     await page.goto('https://my.undercurrentss.biz/index.php?rp=/login');
 
+    // Verify the presence of login elements before proceeding
+    try {
+        await page.waitForSelector(emailSelector, { timeout: 5000 });
+        await page.waitForSelector(passwordSelector, { timeout: 5000 });
+        await page.waitForSelector('#login', { timeout: 5000 });
+        console.log('ログインページの要素が確認されました');
+    } catch (error) {
+        console.error('ログインページの要素が見つかりません:', error);
+        const failureData = {
+            date: new Date().toISOString(),
+            status: 'ログインページ要素確認失敗',
+            error: error.message,
+            url: page.url()
+        };
+        fs.writeFileSync('login_status.json', JSON.stringify(failureData, null, 2));
+        console.log('ログインページ要素確認失敗データ:', JSON.stringify(failureData, null, 2));
+        await browser.close();
+        process.exit(1);
+    }
+
     await page.type(emailSelector, process.env.UCSS_EMAIL);
     await page.type(passwordSelector, process.env.UCSS_PASSWORD);
     await page.click('#login');
