@@ -113,6 +113,11 @@ async function logErrorDetails(page, errorMessage) {
           await page.waitForSelector(postLoginSelector, { visible: true, timeout: 10000 });
           console.log('ログイン後の要素が確認されました');
       } catch (error) {
+          // Log all elements on the page for debugging
+          const allElements = await page.evaluate(() => {
+              return Array.from(document.querySelectorAll('*')).map(el => el.outerHTML);
+          });
+          console.log('ログイン後のページに存在する要素:', allElements);
           await logErrorDetails(page, 'ログイン後の要素が見つかりません');
           await browser.close();
           process.exit(1);
