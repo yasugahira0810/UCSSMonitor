@@ -37,3 +37,8 @@
   {"date": "2025-03-22T13:00:00Z", "remainingData": 50.4}
 ]
 ```
+
+### UCSSのURLやCSSセレクタ
+- [ログインページ](https://my.undercurrentss.biz/index.php?rp=/login)
+- [ログインした直後のページ](https://my.undercurrentss.biz/clientarea.php)
+- ログインページのログインボタンのCSSセレクタ #login

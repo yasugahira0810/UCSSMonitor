@@ -4,25 +4,32 @@ const fs = require('fs');
 (async () => {
   const browser = await puppeteer.launch();
   const page = await browser.newPage();
-  await page.goto('https://ucss.example.com/login');
+  try {
+    await page.goto('https://my.undercurrentss.biz/index.php?rp=/login');
 
-  await page.type('#email', process.env.UCSS_EMAIL);
-  await page.type('#password', process.env.UCSS_PASSWORD);
-  await page.click('#loginButton');
+    await page.type('#email', process.env.UCSS_EMAIL);
+    await page.type('#password', process.env.UCSS_PASSWORD);
+    await page.click('#login');
 
-  await page.waitForNavigation();
-  await page.goto('https://ucss.example.com/service-details');
+    await page.waitForNavigation();
 
-  const remainingData = await page.evaluate(() => {
-    return document.querySelector('#remainingData').innerText;
-  });
+    console.log('ログイン成功');
 
-  const data = {
-    date: new Date().toISOString(),
-    remainingData: parseFloat(remainingData)
-  };
+    await page.goto('https://my.undercurrentss.biz/clientarea.php');
 
-  fs.writeFileSync('data.json', JSON.stringify(data, null, 2));
+    const remainingData = await page.evaluate(() => {
+      return document.querySelector('#remainingData').innerText;
+    });
 
-  await browser.close();
+    const data = {
+      date: new Date().toISOString(),
+      remainingData: parseFloat(remainingData)
+    };
+
+    fs.writeFileSync('data.json', JSON.stringify(data, null, 2));
+  } catch (error) {
+    console.error('ログイン失敗:', error);
+  } finally {
+    await browser.close();
+  }
 })();
