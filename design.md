@@ -19,7 +19,7 @@
 - メールアドレスとパスワードをGitHub ActionsのSecretsで安全に管理
 - GitHub Actionsで1時間ごとにジョブを実行し、PuppeteerでUCSSにログイン
 - ログインしたらログインしたページのURLをログに出力
-- ログイン失敗時には「Login Details Incorrect. Please try again.」が表示されるので、その文字列を検出して、ログイン失敗を伝える
+- ログイン失敗時にはエラーメッセージが表示されるので、その文字列を検出して、ログイン失敗を伝える
 - ログインページに「サービスも詳細」という文字列が表示されるまで待つ
 - UCSSの「サービスの詳細」ページへ遷移してデータ通信量を取得
 - Gistの更新を契機に次のGitHub Actionsを動かしてグラフを再生成
@@ -46,6 +46,6 @@
 - ログインページのログインボタンのCSSセレクタ #login
 - ログインページのメールアドレス入力欄のCSSセレクタ #inputEmail
 - ログインページのパスワード入力欄のCSSセレクタ #inputPassword
-- ログインページでログイン失敗した時のエラーメッセージ Login Details Incorrect. Please try again.
+- ログインページでログイン失敗した時のエラーメッセージのCSSセレクタ body > div.app-main > div.main-body > div > div > div > div > div > div
 - ログインページから「サービス詳細」ページへのリンクのCSSセレクタ　#ClientAreaHomePagePanels-Active_Products_Services-0 > div > div.list-group-item-actions > button
 - 「サービス詳細」ページの残りデータ通信量を示すテキストのCSSセレクタ #traffic-header > p.free-traffic > span.traffic-number
