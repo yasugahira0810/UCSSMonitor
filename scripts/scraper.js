@@ -43,7 +43,9 @@ const remainingDataSelector = '#traffic-header > p.free-traffic > span.traffic-n
 
     // Wait for the service details button to appear and click it
     await page.waitForSelector(serviceDetailsLinkSelector, { visible: true });
-    await page.click(serviceDetailsLinkSelector);
+    await page.evaluate((selector) => {
+      document.querySelector(selector).click();
+    }, serviceDetailsLinkSelector);
 
     // Wait for navigation to complete
     await page.waitForNavigation();
