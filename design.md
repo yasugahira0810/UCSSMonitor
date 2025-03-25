@@ -1,6 +1,3 @@
-GitHub Copilotへ：
-新しいWebアプリを開発したいので、設計を手伝ってください。
-
 ### 概要：
 - VPNサービス「UCSS」の残りのデータ通信量をグラフ化するアプリ「UCSSMonitor」
 - UCSSMonitorはユーザーに代わってUCSSにメールアドレスとパスワードを入力して、「サービスの詳細」ページからスクレイピングによってデータ通信量を確認してGistに記録し、グラフ化する（以降、これをジョブと呼ぶ）
@@ -12,8 +9,7 @@ GitHub Copilotへ：
 ### 技術スタック：
 - フロントエンド: Vue.js + Chart.js
 - バックエンド: node.js
-- 初期の開発環境: devcontainer
-- 後期の開発環境: GitHub Actions
+- 実行環境: GitHub Actions
 - データ保存: Gist（JSONフォーマット）
 - 認証情報管理: GitHub ActionのSecrets
 - グラフの表示先: GitHub Pages
@@ -41,9 +37,3 @@ GitHub Copilotへ：
   {"date": "2025-03-22T13:00:00Z", "remainingData": 50.4}
 ]
 ```
-
-### 開発の進め方
-1. devcontainer内でPuppeteerを手動実行してUCSSをスクレイピングして、標準出力に時刻と残りのデータ通信量をGistに追記する
-2. GitHub Actions内でPuppeteerを手動実行してUCSSをスクレイピングして、標準出力に時刻と残りのデータ通信量をGistに追記する
-
-この仕様をもとに、ディレクトリ構成、データベーススキーマ、GitHub Actionsのワークフローの詳細を提案してください。
