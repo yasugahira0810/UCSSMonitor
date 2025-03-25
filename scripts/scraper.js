@@ -5,8 +5,8 @@ const fs = require('fs');
 const emailSelector = '#inputEmail';
 const passwordSelector = '#inputPassword';
 
-// Update the scraper.js file to use CSS selector for the service details link
-const serviceDetailsLinkSelector = '#ClientAreaHomePagePanels-Active_Products_Services-0 > div > div.panel-footer > button';
+// Update the CSS selector for the service details button click
+const serviceDetailsLinkSelector = '#ClientAreaHomePagePanels-Active_Products_Services-0 > div > div.list-group-item-actions > button';
 const remainingDataSelector = '#traffic-header > p.free-traffic > span.traffic-number';
 
 (async () => {
@@ -41,22 +41,12 @@ const remainingDataSelector = '#traffic-header > p.free-traffic > span.traffic-n
 
     await page.goto('https://my.undercurrentss.biz/clientarea.php');
 
-    // Wait for the service details link to appear and ensure it is interactable
+    // Wait for the service details button to appear and click it
     await page.waitForSelector(serviceDetailsLinkSelector, { visible: true });
-    const serviceDetailsButton = await page.$(serviceDetailsLinkSelector);
-    if (serviceDetailsButton) {
-      // Ensure the button is interactable
-      const isDisabled = await page.evaluate(button => button.disabled, serviceDetailsButton);
-      if (!isDisabled) {
-        await serviceDetailsButton.click();
-        // Wait for navigation to complete by checking for a specific element on the next page
-        await page.waitForSelector(remainingDataSelector, { timeout: 10000 });
-      } else {
-        throw new Error('Service Details button is disabled');
-      }
-    } else {
-      throw new Error('Service Details button not found');
-    }
+    await page.click(serviceDetailsLinkSelector);
+
+    // Wait for navigation to complete
+    await page.waitForNavigation();
 
     const remainingData = await page.evaluate((selector) => {
       return document.querySelector(selector).innerText;
