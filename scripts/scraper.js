@@ -20,6 +20,25 @@ async function isLoggedIn(page) {
   }
 }
 
+// Function to log detailed error information
+async function logErrorDetails(page, errorMessage) {
+  const currentUrl = page.url();
+  const pageContent = await page.content();
+  console.error(errorMessage);
+  console.error('現在のURL:', currentUrl);
+  console.error('現在のページHTML:', pageContent);
+
+  const failureData = {
+    date: new Date().toISOString(),
+    status: 'エラー',
+    error: errorMessage,
+    url: currentUrl,
+    html: pageContent
+  };
+  fs.writeFileSync('error_details.json', JSON.stringify(failureData, null, 2));
+  console.log('エラーデータが記録されました:', JSON.stringify(failureData, null, 2));
+}
+
 (async () => {
   const browser = await puppeteer.launch({
     args: ['--no-sandbox', '--disable-setuid-sandbox']
@@ -35,15 +54,7 @@ async function isLoggedIn(page) {
         await page.waitForSelector('#login', { timeout: 5000 });
         console.log('ログインページの要素が確認されました');
     } catch (error) {
-        console.error('ログインページの要素が見つかりません:', error);
-        const failureData = {
-            date: new Date().toISOString(),
-            status: 'ログインページ要素確認失敗',
-            error: error.message,
-            url: page.url()
-        };
-        fs.writeFileSync('login_status.json', JSON.stringify(failureData, null, 2));
-        console.log('ログインページ要素確認失敗データ:', JSON.stringify(failureData, null, 2));
+        await logErrorDetails(page, 'ログインページの要素が見つかりません');
         await browser.close();
         process.exit(1);
     }
@@ -57,13 +68,21 @@ async function isLoggedIn(page) {
         console.log(`Password length: ${password.length}`);
     } else {
         console.error('環境変数 UCSS_EMAIL または UCSS_PASSWORD が設定されていません');
+        await browser.close();
+        process.exit(1);
     }
 
     await page.type(emailSelector, process.env.UCSS_EMAIL);
     await page.type(passwordSelector, process.env.UCSS_PASSWORD);
     await page.click('#login');
 
-    await page.waitForNavigation();
+    try {
+        await page.waitForNavigation({ timeout: 10000 });
+    } catch (error) {
+        await logErrorDetails(page, 'ログイン後のページへの遷移に失敗しました');
+        await browser.close();
+        process.exit(1);
+    }
 
     // Log the HTML of the page after login for debugging
     const pageContent = await page.content();
@@ -96,19 +115,9 @@ async function isLoggedIn(page) {
 
       console.log('データ取得成功:', JSON.stringify(data, null, 2));
     } else {
-      const currentUrl = page.url();
-      console.error('ログイン失敗: ログイン後のページに必要な要素が見つかりません');
-      console.error('失敗時のURL:', currentUrl);
-
-      const failureData = {
-        date: new Date().toISOString(),
-        status: 'ログイン失敗',
-        error: 'ログイン後のページに必要な要素が見つかりません',
-        url: currentUrl
-      };
-      fs.writeFileSync('login_status.json', JSON.stringify(failureData, null, 2));
-
-      console.log('ログイン失敗データ:', JSON.stringify(failureData, null, 2));
+      await logErrorDetails(page, 'ログイン後のページに必要な要素が見つかりません');
+      await browser.close();
+      process.exit(1);
     }
   } catch (error) {
     const currentUrl = page.url();
