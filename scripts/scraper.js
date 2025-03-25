@@ -5,6 +5,10 @@ const fs = require('fs');
 const emailSelector = '#inputEmail';
 const passwordSelector = '#inputPassword';
 
+// Add navigation to the "Service Details" page and extract remaining data
+const serviceDetailsLinkSelector = '#ClientAreaHomePagePanels-Active_Products_Services-0 > div';
+const remainingDataSelector = '#traffic-header > p.free-traffic > span.traffic-number';
+
 (async () => {
   const browser = await puppeteer.launch({
     args: ['--no-sandbox', '--disable-setuid-sandbox']
@@ -32,9 +36,14 @@ const passwordSelector = '#inputPassword';
 
     await page.goto('https://my.undercurrentss.biz/clientarea.php');
 
-    const remainingData = await page.evaluate(() => {
-      return document.querySelector('#remainingData').innerText;
-    });
+    await page.click(serviceDetailsLinkSelector);
+    await page.waitForNavigation();
+
+    const remainingData = await page.evaluate((selector) => {
+      return document.querySelector(selector).innerText;
+    }, remainingDataSelector);
+
+    console.log('残りデータ通信量:', remainingData);
 
     const data = {
       date: new Date().toISOString(),
