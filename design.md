@@ -16,11 +16,13 @@
 - スクレイピング: Puppeteer
 
 ### 必要な機能：
-1. メールアドレスとパスワードをGitHub ActionsのSecretsで安全に管理
-2. GitHub Actionsで1時間ごとにジョブを実行し、PuppeteerでUCSSにログイン
-3. UCSSの「サービスの詳細」ページへ遷移してデータ通信量を取得
-4. Gistの更新を契機に次のGitHub Actionsを動かしてグラフを再生成
-5. 再生成したグラフをGitHub Pagesへデプロイ
+- メールアドレスとパスワードをGitHub ActionsのSecretsで安全に管理
+- GitHub Actionsで1時間ごとにジョブを実行し、PuppeteerでUCSSにログイン
+- ログインしたらログインしたページのURLをログに出力
+- ログインページに「サービスも詳細」という文字列が表示されるまで待つ
+- UCSSの「サービスの詳細」ページへ遷移してデータ通信量を取得
+- Gistの更新を契機に次のGitHub Actionsを動かしてグラフを再生成
+- 再生成したグラフをGitHub Pagesへデプロイ
 
 ### セキュリティ：
 

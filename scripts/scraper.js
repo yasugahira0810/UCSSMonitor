@@ -25,10 +25,15 @@ const remainingDataSelector = '#traffic-header > p.free-traffic > span.traffic-n
 
     console.log('ログイン成功');
 
+    // Log the current page URL after login
+    const currentUrl = page.url();
+    console.log('ログイン後のURL:', currentUrl);
+
     // Record login success
     const successData = {
       date: new Date().toISOString(),
-      status: 'ログイン成功'
+      status: 'ログイン成功',
+      url: currentUrl
     };
     fs.writeFileSync('login_status.json', JSON.stringify(successData, null, 2));
 
