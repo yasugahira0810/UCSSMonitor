@@ -48,6 +48,17 @@ async function isLoggedIn(page) {
         process.exit(1);
     }
 
+    // Log the first and last character of the email and the length of the password
+    const email = process.env.UCSS_EMAIL;
+    const password = process.env.UCSS_PASSWORD;
+
+    if (email && password) {
+        console.log(`Email: ${email[0]}***${email[email.length - 1]}`);
+        console.log(`Password length: ${password.length}`);
+    } else {
+        console.error('環境変数 UCSS_EMAIL または UCSS_PASSWORD が設定されていません');
+    }
+
     await page.type(emailSelector, process.env.UCSS_EMAIL);
     await page.type(passwordSelector, process.env.UCSS_PASSWORD);
     await page.click('#login');
