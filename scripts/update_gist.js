@@ -4,21 +4,21 @@ const fetch = require('node-fetch'); // Import node-fetch
 (async () => {
   const { Octokit } = await import('@octokit/rest');
   const octokit = new Octokit({ 
-    auth: secrets.GH_PAT, // Use secrets.GH_PAT for authentication
+    auth: process.env.GH_PAT, // Use process.env.GH_PAT for authentication
     request: { fetch } // Pass fetch implementation
   });
 
-  // Log the GIST_USER and GIST_ID secrets
-  console.log(`GIST_USER: ${secrets.GIST_USER}`);
-  console.log(`GIST_ID: ${secrets.GIST_ID}`);
+  // Log the GIST_USER and GIST_ID environment variables
+  console.log(`GIST_USER: ${process.env.GIST_USER}`);
+  console.log(`GIST_ID: ${process.env.GIST_ID}`);
 
-  // Construct the Gist URL using secrets.GIST_USER and secrets.GIST_ID
-  const gistUrl = `https://gist.github.com/${secrets.GIST_USER}/${secrets.GIST_ID}`;
+  // Construct the Gist URL using environment variables
+  const gistUrl = `https://gist.github.com/${process.env.GIST_USER}/${process.env.GIST_ID}`;
   console.log(`Updating Gist at: ${gistUrl}`);
 
   // Fetch existing Gist data
   const gist = await octokit.gists.get({
-    gist_id: secrets.GIST_ID // Use secrets.GIST_ID
+    gist_id: process.env.GIST_ID // Use process.env.GIST_ID
   });
 
   // Add error handling to check if gist.data.files exists
@@ -43,7 +43,7 @@ const fetch = require('node-fetch'); // Import node-fetch
 
   // Update the Gist with the new data
   await octokit.gists.update({
-    gist_id: secrets.GIST_ID, // Use secrets.GIST_ID
+    gist_id: process.env.GIST_ID, // Use process.env.GIST_ID
     files: {
       [fileName]: {
         content: JSON.stringify(updatedData, null, 2) // Format JSON with indentation
