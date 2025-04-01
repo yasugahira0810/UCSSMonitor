@@ -16,6 +16,6 @@
     "vue-chartjs": "^5.3.2"
   },
   "devDependencies": {
-    "@vue/cli-service": "^3.3.1"
+    "@vue/cli-service": "^5.0.8"
   }
 }
