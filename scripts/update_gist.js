@@ -1,12 +1,20 @@
 const fs = require('fs');
+const fetch = require('node-fetch'); // Import node-fetch
 
 (async () => {
   const { Octokit } = await import('@octokit/rest');
-  const octokit = new Octokit({ auth: process.env.GH_PAT }); // Use GH_PAT for authentication
+  const octokit = new Octokit({ 
+    auth: process.env.GH_PAT, // Use GH_PAT for authentication
+    request: { fetch } // Pass fetch implementation
+  });
+
+  // Construct the Gist URL using GIST_USER and GIST_ID
+  const gistUrl = `https://gist.github.com/${process.env.GIST_USER}/${process.env.GIST_ID}`;
+  console.log(`Updating Gist at: ${gistUrl}`);
 
   // Fetch existing Gist data
   const gist = await octokit.gists.get({
-    gist_id: 'ec00ab4d6ed6cdb4f1b21f65377fc6af' // Replace with actual Gist ID
+    gist_id: process.env.GIST_ID // Use GIST_ID from environment variables
   });
 
   // Dynamically get the file name (assuming there's only one file in the Gist)
@@ -17,7 +25,7 @@ const fs = require('fs');
 
   // Create new data entry
   const newEntry = {
-    timestamp: new Date().toISOString(),
+    date: new Date().toISOString(),
     remainingData: Math.floor(Math.random() * 10000) // Example: Random remaining data in MB
   };
 
@@ -26,7 +34,7 @@ const fs = require('fs');
 
   // Update the Gist with the new data
   await octokit.gists.update({
-    gist_id: 'ec00ab4d6ed6cdb4f1b21f65377fc6af',
+    gist_id: process.env.GIST_ID, // Use GIST_ID from environment variables
     files: {
       [fileName]: {
         content: JSON.stringify(updatedData, null, 2) // Format JSON with indentation
