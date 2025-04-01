@@ -80,6 +80,7 @@ async function waitForPostLoginText(page) {
     await page.waitForSelector(SELECTORS.serviceDetailsLink, { timeout: 10000 });
     console.log('「サービスの詳細」ページへのリンクが確認されました');
   } catch (error) {
+    console.error('waitForPostLoginTextでエラーが発生しました:', error.message);
     await logErrorDetails(page, '「サービスの詳細」ページへのリンクが見つかりません');
     throw error;
   }
@@ -106,7 +107,9 @@ async function logRemainingData(page) {
     const password = process.env.UCSS_PASSWORD;
 
     await login(page, email, password);
+    console.log('waitForPostLoginTextを実行します');
     await waitForPostLoginText(page);
+    console.log('waitForPostLoginTextが成功しました。logRemainingDataを実行します');
     await logRemainingData(page);
   } catch (error) {
     console.error('エラー:', error.message);
