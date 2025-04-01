@@ -22,14 +22,12 @@
 - ログイン失敗時にはエラーメッセージが表示されるので、その文字列を検出して、ログイン失敗を伝える
 - ログイン後のページに「サービス詳細」ページへのリンクのCSSセレクタが表示されるまで待つ
 - UCSSの「サービスの詳細」ページへ遷移してデータ通信量を取得
-- データ通信量をログに出力する
+- Gistを、データ保存（Gist）のフォーマットに従って、更新
 - Gistの更新を契機に次のGitHub Actionsを動かしてグラフを再生成
 - 再生成したグラフをGitHub Pagesへデプロイ
 
 ### セキュリティ：
 
-- devcontainerでの開発では.envを使って、メールアドレス(EMAIL)とパスワード(PASSWORD)は環境変数で管理
-- .envはGitの管理対象外とすることで安全に管理
 - GitHub SecretsでUCSSのメールアドレスとパスワードを安全に管理
 - リポジトリはパブリックリポジトリ
 
@@ -51,3 +49,9 @@
 - ログインページでログイン失敗した時のエラーメッセージのCSSセレクタ body > div.app-main > div.main-body > div > div > div > div > div > div
 - ログインページから「サービス詳細」ページへのリンクのCSSセレクタ　#ClientAreaHomePagePanels-Active_Products_Services-0 > div > div.list-group-item-actions > button
 - 「サービス詳細」ページの残りデータ通信量を示すテキストのCSSセレクタ #traffic-header > p.free-traffic > span.traffic-number
+- [Gistのパス](https://gist.github.com/yasugahira0810/ec00ab4d6ed6cdb4f1b21f65377fc6af)
+
+### GitHub ActionsのSecrets
+- UCSS_EMAIL: UCSSのログイン用メールアドレス
+- UCSS_PASSWORD: UCSSのログイン用パスワード
+- GH_PAT: Gist更新用のPersonal Access Token
