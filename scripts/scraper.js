@@ -98,13 +98,18 @@ async function logRemainingData(page) {
   }
 }
 
+// Updated to use GitHub Actions secrets directly in the script.
 (async () => {
   const browser = await puppeteer.launch({ args: ['--no-sandbox', '--disable-setuid-sandbox'] });
   const page = await browser.newPage();
-
   try {
-    const email = process.env.UCSS_EMAIL;
-    const password = process.env.UCSS_PASSWORD;
+    // Fetching secrets directly from GitHub Actions secrets
+    const email = secrets.UCSS_EMAIL;
+    const password = secrets.UCSS_PASSWORD;
+
+    if (!email || !password) {
+      throw new Error('GitHub Actions Secrets UCSS_EMAIL または UCSS_PASSWORD が設定されていません');
+    }
 
     await login(page, email, password);
     console.log('waitForPostLoginTextを実行します');
