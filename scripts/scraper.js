@@ -85,6 +85,18 @@ async function waitForPostLoginText(page) {
   }
 }
 
+async function logRemainingData(page) {
+  try {
+    await page.click(SELECTORS.serviceDetailsLink);
+    await page.waitForSelector(SELECTORS.remainingData, { timeout: 10000 });
+    const remainingData = await page.$eval(SELECTORS.remainingData, el => el.innerText);
+    console.log('残りデータ通信量:', remainingData);
+  } catch (error) {
+    await logErrorDetails(page, '残りデータ通信量の取得に失敗しました');
+    throw error;
+  }
+}
+
 (async () => {
   const browser = await puppeteer.launch({ args: ['--no-sandbox', '--disable-setuid-sandbox'] });
   const page = await browser.newPage();
@@ -95,6 +107,7 @@ async function waitForPostLoginText(page) {
 
     await login(page, email, password);
     await waitForPostLoginText(page);
+    await logRemainingData(page);
   } catch (error) {
     console.error('エラー:', error.message);
   } finally {
