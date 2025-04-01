@@ -8,6 +8,10 @@ const fetch = require('node-fetch'); // Import node-fetch
     request: { fetch } // Pass fetch implementation
   });
 
+  // Log the GIST_USER and GIST_ID environment variables
+  console.log(`GIST_USER: ${process.env.GIST_USER}`);
+  console.log(`GIST_ID: ${process.env.GIST_ID}`);
+
   // Construct the Gist URL using GIST_USER and GIST_ID
   const gistUrl = `https://gist.github.com/${process.env.GIST_USER}/${process.env.GIST_ID}`;
   console.log(`Updating Gist at: ${gistUrl}`);
@@ -16,6 +20,11 @@ const fetch = require('node-fetch'); // Import node-fetch
   const gist = await octokit.gists.get({
     gist_id: process.env.GIST_ID // Use GIST_ID from environment variables
   });
+
+  // Add error handling to check if gist.data.files exists
+  if (!gist.data.files || Object.keys(gist.data.files).length === 0) {
+    throw new Error('No files found in the Gist. Please check the Gist ID or its content.');
+  }
 
   // Dynamically get the file name (assuming there's only one file in the Gist)
   const fileName = Object.keys(gist.data.files)[0];
