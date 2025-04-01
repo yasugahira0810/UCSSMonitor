@@ -91,7 +91,7 @@ async function logRemainingData(page) {
     await page.click(SELECTORS.serviceDetailsLink);
     await page.waitForSelector(SELECTORS.remainingData, { timeout: 10000 });
     const remainingData = await page.$eval(SELECTORS.remainingData, el => el.innerText);
-    console.log('残りデータ通信量:', remainingData);
+    console.log(remainingData); // Output only the remainingData value for GitHub Actions
   } catch (error) {
     await logErrorDetails(page, '残りデータ通信量の取得に失敗しました');
     throw error;
