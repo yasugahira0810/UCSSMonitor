@@ -1,5 +1,8 @@
 const fs = require('fs');
 const fetch = require('node-fetch'); // Import node-fetch
+const { logRemainingData } = require('./scraper');
+
+const remainingData = process.env.REMAINING_DATA;
 
 (async () => {
   const { Octokit } = await import('@octokit/rest');
@@ -32,10 +35,9 @@ const fetch = require('node-fetch'); // Import node-fetch
   // Parse existing data from the Gist
   const existingData = JSON.parse(gist.data.files[fileName].content);
 
-  // Create new data entry
   const newEntry = {
     date: new Date().toISOString(),
-    remainingData: Math.floor(Math.random() * 10000) // Example: Random remaining data in MB
+    remainingData: parseFloat(remainingData) // Use the value from the environment variable
   };
 
   // Append new entry to existing data

@@ -1,79 +1,86 @@
 name: UCSSMonitor Job
 
 on:
-  push: # Add push event trigger
+  push:
     branches:
-      - main # Specify the branch to trigger on
+      - main
   schedule:
-    - cron: '0 * * * *' # 毎時実行
+    - cron: '0 * * * *'
   workflow_dispatch:
 
 jobs:
   scrape_and_record:
     runs-on: ubuntu-latest
-
+    outputs:
+      remainingData: ${{ steps.run_scraper.outputs.remainingData }}
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
+      - name: Checkout repository
+        uses: actions/checkout@v2
 
-    - name: Set up Node.js
-      uses: actions/setup-node@v2
-      with:
-        node-version: '18'
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '18'
 
-    - name: Cache Node.js modules
-      uses: actions/cache@v3
-      with:
-        path: ~/.npm
-        key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-        restore-keys: |
-          ${{ runner.os }}-node-
+      - name: Cache Node.js modules
+        uses: actions/cache@v3
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
 
-    - name: Install dependencies
-      run: npm install
+      - name: Install dependencies
+        run: npm install
 
-    - name: Run scraper
-      env:
-        UCSS_EMAIL: ${{ secrets.UCSS_EMAIL }}
-        UCSS_PASSWORD: ${{ secrets.UCSS_PASSWORD }}
-      run: node scripts/scraper.js
+      - name: Run scraper
+        id: run_scraper  # IDを設定
+        env:
+          UCSS_EMAIL: ${{ secrets.UCSS_EMAIL }}
+          UCSS_PASSWORD: ${{ secrets.UCSS_PASSWORD }}
+        run: |
+          # scraper.jsが remainingData の値を標準出力に出力すると仮定
+          remainingData=$(node scripts/scraper.js)
+          echo "remainingData=$remainingData" >> $GITHUB_ENV
+          echo "::set-output name=remainingData::$remainingData"
 
-    - name: Update Gist
-      env:
-        GH_PAT: ${{ secrets.GH_PAT }}
-        GIST_USER: ${{ secrets.GIST_USER }}
-        GIST_ID: ${{ secrets.GIST_ID }}
-      run: node scripts/update_gist.js
+      - name: Update Gist
+        env:
+          GH_PAT: ${{ secrets.GH_PAT }}
+          GIST_USER: ${{ secrets.GIST_USER }}
+          GIST_ID: ${{ secrets.GIST_ID }}
+          # Run scraper の Outputs から remainingData を環境変数としてセット
+          REMAINING_DATA: ${{ steps.run_scraper.outputs.remainingData }}
+        run: node scripts/update_gist.js
 
   update_graph:
     needs: scrape_and_record
     runs-on: ubuntu-latest
-
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
+      - name: Checkout repository
+        uses: actions/checkout@v2
 
-    - name: Set up Node.js
-      uses: actions/setup-node@v2
-      with:
-        node-version: '18'
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '18'
 
-    - name: Cache Node.js modules
-      uses: actions/cache@v3
-      with:
-        path: ~/.npm
-        key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-        restore-keys: |
-          ${{ runner.os }}-node-
+      - name: Cache Node.js modules
+        uses: actions/cache@v3
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
 
-    - name: Install dependencies
-      run: npm install
+      - name: Install dependencies
+        run: npm install
 
-    - name: Generate graph
-      run: npm run generate-graph
+      - name: Generate graph
+        run: npm run generate-graph
 
-    - name: Deploy to GitHub Pages
-      uses: peaceiris/actions-gh-pages@v3
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: ./public
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./public
