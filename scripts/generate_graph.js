@@ -17,11 +17,14 @@ import fetch from 'node-fetch';
         Authorization: `token ${process.env.GH_PAT}`,
       },
     });
+    console.log('Response status:', response.status); // Log status code
+    const rawData = await response.text(); // Use text() to log raw response
+    console.log('Raw response data:', rawData); // Log raw response
+    const gistData = JSON.parse(rawData); // Parse JSON
+
     if (!response.ok) {
       throw new Error(`Failed to fetch Gist data: ${response.statusText}`);
     }
-
-    const gistData = await response.json();
 
     // Process the Gist data in memory
     console.log('Gist data fetched successfully:', gistData);
