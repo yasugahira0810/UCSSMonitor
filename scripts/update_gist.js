@@ -54,6 +54,7 @@ const remainingData = process.env.REMAINING_DATA;
       }
     });
 
+    // Removed the local file saving logic
     console.log('Gist updated successfully with new data:', newEntry);
   } catch (error) {
     console.error('Error updating Gist:', error.message);
