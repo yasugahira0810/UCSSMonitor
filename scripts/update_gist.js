@@ -1,6 +1,6 @@
-const fs = require('fs');
-const fetch = require('node-fetch'); // Import node-fetch
-const { logRemainingData } = require('./scraper');
+import fs from 'fs';
+import fetch from 'node-fetch'; // Import node-fetch
+import { logRemainingData } from './scraper.js';
 
 const remainingData = process.env.REMAINING_DATA;
 
