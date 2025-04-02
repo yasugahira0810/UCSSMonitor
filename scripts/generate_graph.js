@@ -56,7 +56,7 @@ import { Octokit } from '@octokit/rest';
         }
     });
 
-    const outputPath = './public/chart.png';
+    const outputPath = './docs/chart.png';
     const out = fs.createWriteStream(outputPath);
     const stream = canvas.createPNGStream();
     stream.pipe(out);

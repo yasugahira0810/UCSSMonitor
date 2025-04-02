@@ -67,3 +67,26 @@ const remainingData = process.env.REMAINING_DATA;
     }
   }
 })();
+
+const path = require('path');
+
+const copyFiles = () => {
+  const sourceDir = path.join(__dirname, '../public');
+  const targetDir = path.join(__dirname, '../docs');
+
+  if (!fs.existsSync(targetDir)) {
+    fs.mkdirSync(targetDir);
+  }
+
+  const filesToCopy = ['chart.html', 'index.html'];
+
+  filesToCopy.forEach(file => {
+    const sourceFile = path.join(sourceDir, file);
+    const targetFile = path.join(targetDir, file);
+
+    fs.copyFileSync(sourceFile, targetFile);
+    console.log(`${file} was copied to ${targetDir}`);
+  });
+};
+
+copyFiles();
