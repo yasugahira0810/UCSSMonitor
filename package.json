@@ -20,6 +20,7 @@
     "vue-chartjs": "^5.3.2"
   },
   "devDependencies": {
+    "@jest/expect": "^29.7.0",
     "@vue/cli-service": "^5.0.8",
     "jest": "^29.7.0",
     "jest-circus": "^29.7.0",
@@ -27,5 +28,12 @@
   },
   "engines": {
     "node": ">=18"
+  },
+  "jest": {
+    "moduleDirectories": [
+      "node_modules",
+      "src"
+    ],
+    "setupFilesAfterEnv": ["@jest/expect"]
   }
 }
