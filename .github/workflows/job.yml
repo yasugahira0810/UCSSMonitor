@@ -80,12 +80,6 @@ jobs:
           GH_PAT: ${{ secrets.GH_PAT }}
         run: npm run generate-graph
 
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./docs
-
   run_tests:
     runs-on: ubuntu-latest
     steps:
