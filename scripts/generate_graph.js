@@ -68,7 +68,7 @@ import { Octokit } from '@octokit/rest';
 </body>
 </html>`;
 
-    const outputPath = './docs/chart.html';
+    const outputPath = './docs/index.html'; // Updated output path to index.html
     fs.writeFileSync(outputPath, htmlContent);
     console.log('Chart HTML saved to', outputPath);
   } catch (error) {
