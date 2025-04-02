@@ -80,6 +80,34 @@ jobs:
           GH_PAT: ${{ secrets.GH_PAT }}
         run: npm run generate-graph
 
+  deploy_to_pages:
+    needs: update_graph
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Generate chart HTML
+        run: node scripts/generate_graph.js
+
+      - name: Upload artifact for GitHub Pages
+        uses: actions/upload-pages-artifact@v1
+        with:
+          path: docs
+
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
   run_tests:
     runs-on: ubuntu-latest
     steps:
