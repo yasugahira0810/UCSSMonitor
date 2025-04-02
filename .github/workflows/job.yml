@@ -83,6 +83,8 @@ jobs:
   deploy_to_pages:
     needs: update_graph
     runs-on: ubuntu-latest
+    permissions:
+      contents: write  # 🔴 GitHub Actions に gh-pages への push 権限を付与
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
