@@ -79,6 +79,9 @@ jobs:
         run: npm install
 
       - name: Generate graph
+        env:
+          GIST_USER: ${{ secrets.GIST_USER }}
+          GIST_ID: ${{ secrets.GIST_ID }}
         run: npm run generate-graph
 
       - name: Deploy to GitHub Pages
