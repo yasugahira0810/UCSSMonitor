@@ -1,5 +1,5 @@
-const puppeteer = require('puppeteer');
-const fs = require('fs');
+import puppeteer from 'puppeteer';
+import fs from 'fs';
 
 const SELECTORS = {
   emailInput: '#inputEmail',
@@ -10,7 +10,7 @@ const SELECTORS = {
   loginErrorMessage: 'body > div.app-main > div.main-body > div > div > div > div > div > div',
 };
 
-const logErrorDetails = async (page, errorMessage) => {
+export const logErrorDetails = async (page, errorMessage) => {
   const currentUrl = page.url();
   const failureData = {
     date: new Date().toISOString(),
@@ -21,7 +21,7 @@ const logErrorDetails = async (page, errorMessage) => {
   fs.writeFileSync('error_details.json', JSON.stringify(failureData, null, 2));
 };
 
-const isLoggedIn = async (page) => {
+export const isLoggedIn = async (page) => {
   try {
     await page.waitForSelector(SELECTORS.serviceDetailsButton, { timeout: 5000 });
     return true;
@@ -30,7 +30,7 @@ const isLoggedIn = async (page) => {
   }
 };
 
-const login = async (page, email, password) => {
+export const login = async (page, email, password) => {
   try {
     await page.goto('https://my.undercurrentss.biz/index.php?rp=/login');
     await page.waitForSelector(SELECTORS.emailInput, { timeout: 5000 });
@@ -63,7 +63,7 @@ const login = async (page, email, password) => {
   }
 };
 
-const waitForPostLoginText = async (page) => {
+export const waitForPostLoginText = async (page) => {
   try {
     await page.waitForSelector(SELECTORS.serviceDetailsButton, { timeout: 10000 });
   } catch (error) {
@@ -72,7 +72,7 @@ const waitForPostLoginText = async (page) => {
   }
 };
 
-const logRemainingData = async (page) => {
+export const logRemainingData = async (page) => {
   try {
     await page.click(SELECTORS.serviceDetailsButton);
     await page.waitForSelector(SELECTORS.remainingDataText, { timeout: 10000 });
