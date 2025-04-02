@@ -1,6 +1,7 @@
 import fs from 'fs';
 import fetch from 'node-fetch'; // Import node-fetch
 import { logRemainingData } from './scraper.js';
+import path from 'path';
 
 const remainingData = process.env.REMAINING_DATA;
 
@@ -67,8 +68,6 @@ const remainingData = process.env.REMAINING_DATA;
     }
   }
 })();
-
-const path = require('path');
 
 const copyFiles = () => {
   const sourceDir = path.join(__dirname, '../public');
