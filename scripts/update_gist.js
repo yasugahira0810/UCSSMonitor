@@ -69,23 +69,71 @@ const remainingData = process.env.REMAINING_DATA;
   }
 })();
 
-const copyFiles = () => {
-  const sourceDir = path.join(__dirname, '../public');
-  const targetDir = path.join(__dirname, '../docs');
+const generateFiles = () => {
+  const targetDir = path.join('docs');
 
   if (!fs.existsSync(targetDir)) {
     fs.mkdirSync(targetDir);
   }
 
-  const filesToCopy = ['chart.html', 'index.html'];
+  const filesToGenerate = [
+    {
+      name: 'chart.html',
+      content: `<!DOCTYPE html>
+<html>
+<head>
+  <title>Chart</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <h1>Chart Page</h1>
+  <canvas id="myChart" width="400" height="200"></canvas>
+  <script>
+    const ctx = document.getElementById('myChart').getContext('2d');
+    const myChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: ['January', 'February', 'March', 'April', 'May', 'June'],
+        datasets: [{
+          label: 'Sample Data',
+          data: [12, 19, 3, 5, 2, 3],
+          borderColor: 'rgba(75, 192, 192, 1)',
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: {
+            position: 'top',
+          },
+        }
+      }
+    });
+  </script>
+</body>
+</html>`
+    },
+    {
+      name: 'index.html',
+      content: `<!DOCTYPE html>
+<html>
+<head>
+  <title>Index</title>
+</head>
+<body>
+  <h1>Index Page</h1>
+</body>
+</html>`
+    }
+  ];
 
-  filesToCopy.forEach(file => {
-    const sourceFile = path.join(sourceDir, file);
-    const targetFile = path.join(targetDir, file);
-
-    fs.copyFileSync(sourceFile, targetFile);
-    console.log(`${file} was copied to ${targetDir}`);
+  filesToGenerate.forEach(file => {
+    const targetFile = path.join(targetDir, file.name);
+    fs.writeFileSync(targetFile, file.content);
+    console.log(`${file.name} was generated in ${targetDir}`);
   });
 };
 
-copyFiles();
+// Call the function to generate files
+generateFiles();
