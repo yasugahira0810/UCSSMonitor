@@ -15,7 +15,6 @@ sequenceDiagram
     Scraper->>Scraper: Install dependencies
     Scraper->>Scraper: Run scraper
     Scraper->>Gist: Update Gist
-    Scraper->>Gist: Fetch Gist Data
     GitHub->>GraphGenerator: Trigger update_graph job
     GraphGenerator->>GraphGenerator: Checkout repository
     GraphGenerator->>GraphGenerator: Set up Node.js
