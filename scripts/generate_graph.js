@@ -6,6 +6,11 @@ import fetch from 'node-fetch';
   const gistUrl = `https://gist.github.com/${process.env.GIST_USER}/${process.env.GIST_ID}`;
   console.log(`Fetching Gist data from: ${gistUrl}`);
 
+  // Add debugging logs to verify environment variables and constructed URL
+  console.log('GIST_USER:', process.env.GIST_USER);
+  console.log('GIST_ID:', process.env.GIST_ID);
+  console.log('Constructed Gist URL:', gistUrl);
+
   try {
     // Fetch Gist data
     const response = await fetch(gistUrl);
