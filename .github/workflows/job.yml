@@ -79,12 +79,6 @@ jobs:
           GIST_ID: ${{ secrets.GIST_ID }}
         run: npm run generate-graph
 
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./public
-
   run_tests:
     runs-on: ubuntu-latest
     steps:

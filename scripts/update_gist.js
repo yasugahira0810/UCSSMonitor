@@ -34,7 +34,12 @@ const remainingData = process.env.REMAINING_DATA;
     const [fileName] = Object.keys(gistData.files);
 
     // Parse existing data from the Gist
-    const existingData = JSON.parse(gistData.files[fileName].content);
+    let existingData;
+    try {
+      existingData = JSON.parse(gistData.files[fileName].content);
+    } catch (parseError) {
+      throw new Error('Failed to parse Gist content as JSON. Please check the Gist content.');
+    }
 
     const newEntry = {
       date: new Date().toISOString(),
@@ -54,9 +59,11 @@ const remainingData = process.env.REMAINING_DATA;
       }
     });
 
-    // Removed the local file saving logic
     console.log('Gist updated successfully with new data:', newEntry);
   } catch (error) {
     console.error('Error updating Gist:', error.message);
+    if (error.response) {
+      console.error('Response data:', error.response.data);
+    }
   }
 })();
