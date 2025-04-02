@@ -52,6 +52,11 @@ jobs:
           REMAINING_DATA: ${{ steps.run_scraper.outputs.remainingData }}
         run: node scripts/update_gist.js
 
+      - name: Fetch Gist Data
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node scripts/fetch_gist_data.js
+
   update_graph:
     needs: scrape_and_record
     runs-on: ubuntu-latest
