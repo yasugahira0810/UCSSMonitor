@@ -12,8 +12,11 @@ import fetch from 'node-fetch';
   console.log('Constructed Gist URL:', gistUrl);
 
   try {
-    // Fetch Gist data
-    const response = await fetch(gistUrl);
+    const response = await fetch(gistUrl, {
+      headers: {
+        Authorization: `token ${process.env.GH_PAT}`,
+      },
+    });
     if (!response.ok) {
       throw new Error(`Failed to fetch Gist data: ${response.statusText}`);
     }
