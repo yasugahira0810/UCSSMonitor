@@ -34,14 +34,12 @@ jobs:
         run: npm install
 
       - name: Run scraper
-        id: run_scraper  # ステップIDを設定
+        id: run_scraper
         env:
           UCSS_EMAIL: ${{ secrets.UCSS_EMAIL }}
           UCSS_PASSWORD: ${{ secrets.UCSS_PASSWORD }}
         run: |
-          # scraper.jsが remainingData の値を標準出力に出力すると仮定
           remainingData=$(node scripts/scraper.js)
-          # 出力値が複数行や特殊文字を含む場合、適切にエスケープする必要がある場合があります
           echo "remainingData=$remainingData" >> $GITHUB_OUTPUT
 
       - name: Update Gist

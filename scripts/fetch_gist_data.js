@@ -1,7 +1,7 @@
-const axios = require('axios');
-const fs = require('fs');
+import axios from 'axios';
+import fs from 'fs';
 
-const GIST_ID = 'your-gist-id'; // Replace with your Gist ID
+const GIST_ID = process.env.GIST_ID; // Retrieve GIST_ID from GitHub Actions Secret
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN; // Set your GitHub token in the environment variables
 
 async function fetchGistData() {
@@ -11,7 +11,6 @@ async function fetchGistData() {
         Authorization: `token ${GITHUB_TOKEN}`,
       },
     });
-
     const files = response.data.files;
     const data = Object.keys(files).map((fileName) => {
       return {
@@ -19,7 +18,6 @@ async function fetchGistData() {
         content: files[fileName].content,
       };
     });
-
     fs.writeFileSync('public/gist_data.json', JSON.stringify(data, null, 2));
     console.log('Gist data fetched and saved to public/gist_data.json');
   } catch (error) {
