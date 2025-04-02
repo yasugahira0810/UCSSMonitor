@@ -21,7 +21,12 @@ sequenceDiagram
     GraphGenerator->>GraphGenerator: Cache Node.js modules
     GraphGenerator->>GraphGenerator: Install dependencies
     GraphGenerator->>GraphGenerator: Generate graph
-    GraphGenerator->>GitHubPages: Deploy to GitHub Pages
+    GitHub->>GitHubPages: Trigger deploy_to_pages job
+    GitHubPages->>GitHubPages: Checkout repository
+    GitHubPages->>GitHubPages: Setup Node.js
+    GitHubPages->>GitHubPages: Install dependencies
+    GitHubPages->>GitHubPages: Upload artifact for GitHub Pages
+    GitHubPages->>GitHubPages: Deploy to GitHub Pages
     GitHub->>Scraper: Trigger run_tests job
     Scraper->>Scraper: Checkout repository
     Scraper->>Scraper: Set up Node.js

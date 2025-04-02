@@ -95,9 +95,6 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Generate chart HTML
-        run: node scripts/generate_graph.js
-
       - name: Upload artifact for GitHub Pages
         uses: actions/upload-artifact@v3
         with:
