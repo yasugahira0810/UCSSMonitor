@@ -1,43 +1,32 @@
 import fs from 'fs';
 import Chart from 'chart.js/auto';
 import fetch from 'node-fetch';
+import { Octokit } from '@octokit/rest';
 
 (async () => {
+  const octokit = new Octokit({ 
+    auth: process.env.GH_PAT, // Use process.env.GH_PAT for authentication
+    request: { fetch } // Pass fetch implementation
+  });
+
   const gistUrl = `https://gist.github.com/${process.env.GIST_USER}/${process.env.GIST_ID}`;
   console.log(`Fetching Gist data from: ${gistUrl}`);
-
-  // Add debugging logs to verify environment variables and constructed URL
   console.log('GIST_USER:', process.env.GIST_USER);
   console.log('GIST_ID:', process.env.GIST_ID);
   console.log('Constructed Gist URL:', gistUrl);
 
   try {
-    const response = await fetch(gistUrl, {
-      headers: {
-        Authorization: `token ${process.env.GH_PAT}`,
-      },
+    const { data: gistData } = await octokit.gists.get({
+      gist_id: process.env.GIST_ID
     });
-    console.log('Response status:', response.status); // Log status code
-    const rawData = await response.text(); // Use text() to log raw response
-    console.log('Raw response data:', rawData); // Log raw response
-    const gistData = JSON.parse(rawData); // Parse JSON
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch Gist data: ${response.statusText}`);
-    }
-
-    // Process the Gist data in memory
     console.log('Gist data fetched successfully:', gistData);
 
-    // Extract data for the chart (example assumes gistData is an array of objects with "label" and "value" keys)
-    const labels = gistData.map(item => item.label);
-    const values = gistData.map(item => item.value);
+    const labels = gistData.files['data.json'].content.map(item => item.label);
+    const values = gistData.files['data.json'].content.map(item => item.value);
 
-    // Create a chart in a canvas element
     const { createCanvas } = require('canvas');
     const canvas = createCanvas(800, 600);
     const ctx = canvas.getContext('2d');
-
     new Chart(ctx, {
         type: 'bar',
         data: {
@@ -67,13 +56,11 @@ import fetch from 'node-fetch';
         }
     });
 
-    // Save the chart as an image
     const outputPath = './public/chart.png';
     const out = fs.createWriteStream(outputPath);
     const stream = canvas.createPNGStream();
     stream.pipe(out);
     out.on('finish', () => console.log('Chart image saved to', outputPath));
-
   } catch (error) {
     console.error('Error fetching or processing Gist data:', error.message);
   }
