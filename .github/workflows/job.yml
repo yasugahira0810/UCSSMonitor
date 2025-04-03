@@ -125,14 +125,14 @@ jobs:
       - name: Run tests
         run: npm test
 
-  commit_to_master:
+  commit_to_main:
     needs: update_graph
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
         with:
-          ref: master
+          ref: main
 
       - name: Set up Node.js
         uses: actions/setup-node@v2
@@ -145,4 +145,4 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add docs/index.html
           git commit -m "Update index.html in docs folder"
-          git push origin master
+          git push origin main
