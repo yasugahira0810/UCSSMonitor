@@ -89,6 +89,7 @@ jobs:
           GIST_USER: ${{ secrets.GIST_USER }}
           GIST_ID: ${{ secrets.GIST_ID }}
           GH_PAT: ${{ secrets.GH_PAT }}
+          UTC_OFFSET: ${{ secrets.UTC_OFFSET }}
         run: npm run generate-graph
 
       - name: Verify index.html existence

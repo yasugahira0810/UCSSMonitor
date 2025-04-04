@@ -36,14 +36,53 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
     // Sort data by date to ensure chronological order
     dataContent.sort((a, b) => new Date(a.date) - new Date(b.date));
 
+    // 環境変数からUTCオフセットを取得
+    let timezone = 'UTC';
+    let timezoneDisplay = 'UTC+0';
+    
+    if (process.env.UTC_OFFSET) {
+      // タイムゾーンがUTCからのオフセット（例: +8, +9など）として指定されている場合
+      if (/^[+-]\d+$/.test(process.env.UTC_OFFSET)) {
+        const offset = parseInt(process.env.UTC_OFFSET);
+        const offsetHours = Math.abs(offset);
+        const offsetSign = offset >= 0 ? '+' : '-'; // 直感的な設定: +8はUTC+8時間
+        
+        timezoneDisplay = `UTC${offsetSign}${offsetHours}`;
+        
+        // 日付オブジェクトのタイムゾーン設定用にUTCオフセット文字列を作成
+        // 例: +8 → 'Etc/GMT-8', +9 → 'Etc/GMT-9'
+        // 注: Etc/GMTの接頭辞では、標準的な表記とは逆に、プラスは西（マイナス時間）、マイナスは東（プラス時間）を意味する
+        timezone = `Etc/GMT${offset >= 0 ? '-' : '+'}${offsetHours}`;
+      } 
+      // 既存のIANAタイムゾーン識別子（例: Asia/Tokyo, Asia/Shanghai）が指定されている場合
+      else {
+        timezone = process.env.UTC_OFFSET;
+        
+        // 一般的なタイムゾーンの表示名
+        const timezoneMap = {
+          'Asia/Tokyo': 'JST (UTC+9)',
+          'Asia/Shanghai': 'CST (UTC+8)',
+          'America/New_York': 'EST (UTC-5)',
+          'America/Los_Angeles': 'PST (UTC-8)',
+          'Europe/London': 'GMT (UTC+0)',
+          'Europe/Paris': 'CET (UTC+1)'
+        };
+        
+        timezoneDisplay = timezoneMap[timezone] || timezone;
+      }
+    }
+    
+    console.log(`Using timezone: ${timezone} (Display: ${timezoneDisplay})`);
+
     // Format dates for better readability
     const formatDate = (dateString) => {
       const date = new Date(dateString);
-      return date.toLocaleDateString('ja-JP', {
+      return date.toLocaleString('ja-JP', {
         month: 'numeric',
         day: 'numeric',
         hour: '2-digit',
-        minute: '2-digit'
+        minute: '2-digit',
+        timeZone: timezone
       });
     };
 
@@ -116,6 +155,12 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
             color: #7f8c8d;
             font-size: 14px;
         }
+        .timezone-info {
+            text-align: center;
+            margin-top: 10px;
+            color: #7f8c8d;
+            font-size: 14px;
+        }
     </style>
 </head>
 <body>
@@ -145,8 +190,11 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
     </div>
     
     <div class="updated-time">
-        最終更新: ${new Date().toLocaleString('ja-JP')}
+        最終更新: ${new Date().toLocaleString('ja-JP', { timeZone: timezone })}
         (データポイント数: ${dataContent.length})
+    </div>
+    <div class="timezone-info">
+        タイムゾーン: ${timezoneDisplay}
     </div>
     
     <script>
