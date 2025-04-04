@@ -13,66 +13,65 @@ Gistにデータを更新し、グラフ表示のためのHTMLファイルを生
   - GIST_ID
   - REMAINING_DATA（スクレイピングで取得した残りデータ通信量）
 
-## 処理フロー
-
-### Githubへの認証設定
-- Octokit インスタンスを作成し、GitHub APIを通じてGistに接続
-- GH_PAT環境変数を使用して認証
-
-### Gist更新処理
-- 目的: 残りデータ通信量をタイムスタンプと共にGistに追加保存
-- 処理:
-  1. 環境変数からGistのURLを構築
-  2. Octokit APIを使用して既存Gistのデータを取得
-  3. データ形式の検証（JSONとして解析可能か確認）
-  4. 新しいエントリ（日付と残りデータ量）を既存データに追加
-  5. 更新データでGistを更新
-
-### HTML生成処理
-- 目的: 閲覧用のHTMLファイルを生成
-- 処理:
-  1. docsディレクトリの存在確認、なければ作成
-  2. 作成対象のHTMLファイル定義
-     - chart.html: Chart.jsを使用したデータグラフ表示用
-     - index.html: インデックスページ
-  3. 定義したファイルをdocsディレクトリに出力
+## 定数
+- FILENAME: Gistに保存するデータのファイル名（'data.json'）
 
 ## 関数仕様
 
-### 即時実行関数（メイン処理）
-- 目的: Gistデータの取得と更新
+### updateGist()
+- 目的: Gistにデータを更新する
 - 処理:
-  1. Octokitのインポートと初期化
-  2. 環境変数のログ出力（デバッグ用）
-  3. GistのURL構築
-  4. 既存Gistデータの取得
-  5. "data.json"ファイルからデータ解析
-  6. 新規エントリの作成と既存データへの追加
-  7. 更新データでGistの更新
-  8. エラー処理
+  1. Octokitをインポートし、GH_PATを使用してOctokitインスタンスを初期化
+  2. Gist URLをログ出力
+  3. fetchGistDataを呼び出して既存データを取得
+  4. 新しいエントリ（日付と残りデータ量）を作成
+  5. 既存データに新しいエントリを追加
+  6. saveGistDataを呼び出してGistを更新
+  7. エラー処理
+
+### fetchGistData(octokit)
+- 目的: Gistから既存データを取得する
+- 引数: octokitインスタンス
+- 戻り値: Gistから取得したJSONデータ（配列形式）
+- 処理:
+  1. octokitを使用してGistデータを取得
+  2. Gistにファイルが存在するか検証
+  3. JSONパースしてデータを返す
+
+### saveGistData(octokit, updatedData)
+- 目的: 更新したデータをGistに保存する
+- 引数: 
+  - octokit: octokitインスタンス
+  - updatedData: 更新するデータ
+- 処理:
+  1. octokitのgists.updateメソッドを使用してGistを更新
+  2. FILENAMEで指定したファイルに更新データを書き込み
 
 ### generateFiles()
 - 目的: 表示用HTMLファイルの生成
 - 処理:
-  1. 出力ディレクトリ（docs）の確認と作成
-  2. 生成するファイル定義（名前とコンテンツ）
-  3. 定義に従って各ファイルを出力
-  4. ログ出力
+  1. 出力ディレクトリ（docs）の存在確認と作成
+  2. 生成するファイル定義（chart.htmlとindex.html）
+  3. 各ファイルに必要なHTMLコンテンツを定義
+  4. 定義に従って各ファイルを出力
+  5. ファイル生成のログ出力
+
+## メイン処理
+1. 即時実行関数でupdateGist()を非同期実行
+2. その後generateFiles()を実行してHTMLファイルを生成
 
 ## エラー処理
 - try-catchでGist操作を囲み、エラー発生時は:
   1. エラーメッセージをコンソールに出力
   2. APIレスポンスがある場合は詳細情報も出力
 
-## 実行方法
-スクリプトは2つの主要部分で構成:
-1. 即時実行関数によるGist更新処理
-2. generateFiles()関数による表示HTMLの生成
-
-`node update_gist.js`で実行し、必要な環境変数が設定されていることが前提。
+## 出力ファイル
+1. docs/chart.html - Chart.jsを使用したグラフ表示HTMLファイル
+2. docs/index.html - シンプルなインデックスページ
 
 ## 考慮点
 - Gistのデータ形式は日付と残りデータ量のペアを含む配列形式
 - HTMLファイルはグラフ表示用（chart.html）とインデックス（index.html）の2種類を生成
 - Chart.jsを使用したグラフ表示はCDNから読み込み
 - GitHub認証にはPersonal Access Token（GH_PAT）が必要
+- 生成されるHTMLはサンプルデータを使用した基本的なChart.js実装

@@ -363,6 +363,7 @@ function generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, ti
             border-radius: 4px;
             cursor: pointer;
             margin-top: 10px;
+            margin-right: 10px;
         }
         button:hover {
             background-color: #45a049;
@@ -384,16 +385,11 @@ function generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, ti
         .datetime-control-item:last-child {
             margin-right: 0;
         }
-        .buttons-container {
-            margin-top: 20px;
-            text-align: center;
-            padding: 10px;
-            background-color: #e9f7ef;
-            border-radius: 8px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-        .buttons-container button {
-            margin: 0 10px;
+        .buttons-group {
+            display: flex;
+            justify-content: center;
+            margin-top: 15px;
+            width: 100%;
         }
     </style>
 </head>
@@ -414,29 +410,6 @@ function generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, ti
     
     <div class="controls-container">
         <div class="control-group">
-            <h3>縦軸の設定</h3>
-            <div class="control-item">
-                <label for="y-range">Y軸の範囲 (最小値 - 最大値)</label>
-                <div class="range-slider">
-                    <div class="range-track"></div>
-                    <div class="range-selected" id="y-selected-range"></div>
-                    <input type="range" class="double-range range-min" id="y-min" min="0" max="200" value="${yAxisMin}" step="5">
-                    <input type="range" class="double-range range-max" id="y-max" min="0" max="200" value="${yAxisMax}" step="5">
-                </div>
-                <div class="range-values">
-                    <div>
-                        <input type="number" id="y-min-value" min="0" max="200" value="${yAxisMin}">
-                        <span class="value-display">GB (最小値)</span>
-                    </div>
-                    <div>
-                        <input type="number" id="y-max-value" min="0" max="200" value="${yAxisMax}">
-                        <span class="value-display">GB (最大値)</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="control-group">
             <h3>横軸の設定</h3>
             <div class="datetime-controls">
                 <div class="datetime-control-item">
@@ -449,11 +422,11 @@ function generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, ti
                 </div>
             </div>
         </div>
-    </div>
-    
-    <div class="buttons-container">
-        <button id="apply-settings">設定を適用</button>
-        <button id="reset-settings">リセット</button>
+        
+        <div class="buttons-group">
+            <button id="apply-settings">設定を適用</button>
+            <button id="reset-settings">リセット</button>
+        </div>
     </div>
     
     <script>
@@ -574,86 +547,13 @@ function generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, ti
         
         // UIイベントリスナー設定
         function setupEventListeners() {
-            const yMinSlider = document.getElementById('y-min');
-            const yMaxSlider = document.getElementById('y-max');
-            const yMinValue = document.getElementById('y-min-value');
-            const yMaxValue = document.getElementById('y-max-value');
-            const ySelectedRange = document.getElementById('y-selected-range');
             const xMin = document.getElementById('x-min');
             const xMax = document.getElementById('x-max');
             const applyButton = document.getElementById('apply-settings');
             const resetButton = document.getElementById('reset-settings');
             
-            // スライダー表示更新
-            function updateRangeSlider() {
-                const minVal = parseInt(yMinSlider.value);
-                const maxVal = parseInt(yMaxSlider.value);
-                const minPercent = (minVal / yMinSlider.max) * 100;
-                const maxPercent = (maxVal / yMaxSlider.max) * 100;
-                
-                ySelectedRange.style.left = minPercent + '%';
-                ySelectedRange.style.width = (maxPercent - minPercent) + '%';
-            }
-            
-            updateRangeSlider();
-            
-            // 最小値スライダーイベント
-            yMinSlider.addEventListener('input', function() {
-                const minVal = parseInt(this.value);
-                const maxVal = parseInt(yMaxSlider.value);
-                
-                if (minVal >= maxVal) {
-                    this.value = maxVal - 5;
-                }
-                
-                yMinValue.value = this.value;
-                updateRangeSlider();
-            });
-            
-            // 最大値スライダーイベント
-            yMaxSlider.addEventListener('input', function() {
-                const minVal = parseInt(yMinSlider.value);
-                const maxVal = parseInt(this.value);
-                
-                if (maxVal <= minVal) {
-                    this.value = minVal + 5;
-                }
-                
-                yMaxValue.value = this.value;
-                updateRangeSlider();
-            });
-            
-            // 最小値入力フィールドイベント
-            yMinValue.addEventListener('input', function() {
-                const minVal = parseInt(this.value);
-                const maxVal = parseInt(yMaxValue.value);
-                
-                if (minVal >= maxVal) {
-                    this.value = maxVal - 5;
-                }
-                
-                yMinSlider.value = this.value;
-                updateRangeSlider();
-            });
-            
-            // 最大値入力フィールドイベント
-            yMaxValue.addEventListener('input', function() {
-                const minVal = parseInt(yMinValue.value);
-                const maxVal = parseInt(this.value);
-                
-                if (maxVal <= minVal) {
-                    this.value = minVal + 5;
-                }
-                
-                yMaxSlider.value = this.value;
-                updateRangeSlider();
-            });
-            
             // 設定適用ボタン
             applyButton.addEventListener('click', function() {
-                chartSettings.yMin = Number(yMinValue.value);
-                chartSettings.yMax = Number(yMaxValue.value);
-                
                 const xMinDate = new Date(xMin.value);
                 const xMaxDate = new Date(xMax.value);
                 
@@ -666,20 +566,11 @@ function generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, ti
                     return;
                 }
                 
-                if (chartSettings.yMin >= chartSettings.yMax) {
-                    alert('最小値は最大値より小さくしてください');
-                    return;
-                }
-                
                 initChart(chartSettings);
             });
             
             // リセットボタン
             resetButton.addEventListener('click', function() {
-                yMinSlider.value = ${yAxisMin};
-                yMinValue.value = ${yAxisMin};
-                yMaxSlider.value = ${yAxisMax};
-                yMaxValue.value = ${yAxisMax};
                 xMin.value = '${firstDateFormatted}';
                 xMax.value = '${currentDateFormatted}';
                 
@@ -690,7 +581,6 @@ function generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, ti
                     xMax: currentTimestamp
                 };
                 
-                updateRangeSlider();
                 initChart(chartSettings);
             });
         }
@@ -703,7 +593,6 @@ function generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, ti
     </script>
 </body>
 </html>`;
-
   // ディレクトリの作成とファイル保存
   fs.mkdirSync(CONSTANTS.DOCS_DIR, { recursive: true });
   fs.writeFileSync(CONSTANTS.OUTPUT_PATH, htmlContent);
