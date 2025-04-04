@@ -9,9 +9,6 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 (async () => {
   const gistUrl = `https://gist.github.com/${process.env.GIST_USER}/${process.env.GIST_ID}`;
   console.log(`Fetching Gist data from: ${gistUrl}`);
-  console.log('GIST_USER:', process.env.GIST_USER);
-  console.log('GIST_ID:', process.env.GIST_ID);
-  console.log('Constructed Gist URL:', gistUrl);
 
   try {
     // Fetch raw data from gist
@@ -21,10 +18,16 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
     }
     
     const dataContent = await response.json();
-    console.log('Data content fetched:', dataContent);
 
     if (!Array.isArray(dataContent)) {
       throw new Error('Invalid data format: expected an array');
+    }
+
+    // GitHub Actionsで使用する値を出力
+    if (process.env.GITHUB_ACTIONS) {
+      const latestData = dataContent[dataContent.length - 1];
+      // GitHub Actionsの出力形式に合わせて文字列として出力
+      console.log(`::set-output name=remainingData::${latestData.remainingData.toString()}`);
     }
 
     const labels = dataContent.map(item => item.date);
@@ -82,22 +85,3 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
                             display: true,
                             text: 'Date'
                         }
-                    }
-                }
-            }
-        });
-    </script>
-</body>
-</html>`;
-
-    const outputPath = './docs/index.html';
-    fs.mkdirSync('./docs', { recursive: true });
-    fs.writeFileSync(outputPath, htmlContent);
-    console.log('Chart HTML generated successfully at:', outputPath);
-
-  } catch (error) {
-    console.error('Error occurred:', error.message);
-    console.error('Stack trace:', error.stack);
-    process.exit(1);
-  }
-})();
