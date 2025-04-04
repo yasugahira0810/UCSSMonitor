@@ -101,7 +101,7 @@ jobs:
             exit 1;
           fi
 
-      - name: Deploy to GitHub Pages
+      - name: Deploy to GitHub Pagess
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
