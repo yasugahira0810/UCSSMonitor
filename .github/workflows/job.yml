@@ -39,10 +39,12 @@ jobs:
           UCSS_EMAIL: ${{ secrets.UCSS_EMAIL }}
           UCSS_PASSWORD: ${{ secrets.UCSS_PASSWORD }}
         run: |
-          # Capture the output and wrap it in quotes to ensure it's treated as a string
-          remainingData=$(node scripts/scraper.js)
-          # Format the output with correct syntax for GitHub Actions
-          echo "remainingData=$(echo -n "${remainingData}")" >> $GITHUB_OUTPUT
+          # スクリプトの出力から remaining_data: の後の部分を抽出して変数に格納
+          output=$(node scripts/scraper.js)
+          remaining_data=$(echo "$output" | grep "remaining_data:" | sed 's/remaining_data://g')
+          
+          # 正しいフォーマットでoutputを設定
+          echo "remainingData=${remaining_data}" >> $GITHUB_OUTPUT
 
       - name: Check scraper output
         run: |
