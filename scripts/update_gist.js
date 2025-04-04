@@ -152,3 +152,11 @@ function generateFiles() {
   await updateGist();
   generateFiles();
 })();
+
+// Export functions for testing purposes
+export {
+  updateGist,
+  fetchGistData,
+  saveGistData,
+  generateFiles
+};

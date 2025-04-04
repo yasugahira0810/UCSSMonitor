@@ -801,3 +801,13 @@ function generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, ti
 
 // メイン処理の実行
 fetchAndProcessData();
+
+// Export functions for testing purposes
+export {
+  fetchAndProcessData,
+  fetchDataFromGist,
+  filterHourlyData,
+  getTimezoneInfo,
+  prepareChartData,
+  calculateYAxisRange
+};

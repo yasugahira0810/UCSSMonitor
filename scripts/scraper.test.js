@@ -1,6 +1,7 @@
 import puppeteer from 'puppeteer';
+import { jest } from '@jest/globals';
 import { logErrorDetails, isLoggedIn, login, waitForPostLoginElements, getRemainingData } from './scraper';
-const fs = require('fs');
+import fs from 'fs';
 
 jest.mock('fs', () => ({
     writeFileSync: jest.fn()

@@ -26,7 +26,10 @@ jobs:
         run: npm install
         
       - name: Run tests
-        run: node --experimental-vm-modules node_modules/jest/bin/jest.js
+        run: |
+          echo "Creating jest.config.js for puppeteer compatibility"
+          echo "export default { transformIgnorePatterns: ['node_modules/(?!(@puppeteer)/)'] };" > jest.config.js
+          node --experimental-vm-modules node_modules/jest/bin/jest.js
   
   scrape_and_record:
     needs: run_tests
