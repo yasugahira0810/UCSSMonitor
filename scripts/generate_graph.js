@@ -16,15 +16,6 @@ import path from 'path';
   console.log('GIST_ID:', process.env.GIST_ID);
   console.log('Constructed Gist URL:', gistUrl);
 
-  const gistPath = path.join(__dirname, 'path_to_gist', 'data.json');
-
-  if (!fs.existsSync(gistPath)) {
-    console.error('Error: data.json file is missing in the Gist. Please ensure the file is uploaded to the Gist.');
-    process.exit(1);
-  }
-
-  const data = fs.readFileSync(gistPath, 'utf8');
-
   try {
     const { data: gistData } = await octokit.gists.get({
       gist_id: process.env.GIST_ID

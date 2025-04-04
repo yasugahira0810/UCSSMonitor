@@ -42,6 +42,13 @@ jobs:
           remainingData=$(node scripts/scraper.js)
           echo "remainingData=$remainingData" >> $GITHUB_OUTPUT
 
+      - name: Check scraper output
+        run: |
+          if [ "${{ steps.run_scraper.outputs.remainingData }}" = "" ]; then
+            echo "Login might have failed or data not retrieved."
+            exit 1
+          fi
+
       - name: Update Gist
         env:
           GH_PAT: ${{ secrets.GH_PAT }}
