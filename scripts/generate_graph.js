@@ -142,12 +142,16 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
     
     // 日時フォーマット関数（YYYY-MM-DDThh:mm形式に変換 - 分を追加）
     const formatDateForInput = (date) => {
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
-      const hour = String(date.getHours()).padStart(2, '0');
-      const minute = String(date.getMinutes()).padStart(2, '0'); // 分を追加
-      return `${year}-${month}-${day}T${hour}:${minute}`; // 時間と分の間にコロンを追加
+      // タイムゾーンを考慮した日付の生成
+      const dateInTimezone = new Date(date.toLocaleString('en-US', { timeZone: timezone }));
+      
+      const year = dateInTimezone.getFullYear();
+      const month = String(dateInTimezone.getMonth() + 1).padStart(2, '0');
+      const day = String(dateInTimezone.getDate()).padStart(2, '0');
+      const hour = String(dateInTimezone.getHours()).padStart(2, '0');
+      const minute = String(dateInTimezone.getMinutes()).padStart(2, '0');
+      
+      return `${year}-${month}-${day}T${hour}:${minute}`;
     };
     
     const firstDateFormatted = formatDateForInput(firstDate);
@@ -356,11 +360,11 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
         <div class="control-group">
             <h3>横軸の設定</h3>
             <div class="control-item">
-                <label for="x-min">開始日時</label>
+                <label for="x-min">開始日時 (${timezoneDisplay})</label>
                 <input type="datetime-local" id="x-min" value="${firstDateFormatted}" min="${firstDateFormatted}" max="${currentDateFormatted}">
             </div>
             <div class="control-item">
-                <label for="x-max">終了日時</label>
+                <label for="x-max">終了日時 (${timezoneDisplay})</label>
                 <input type="datetime-local" id="x-max" value="${currentDateFormatted}" min="${firstDateFormatted}" max="${currentDateFormatted}">
             </div>
             <div class="control-item">
@@ -375,6 +379,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
         const ctx = document.getElementById('myChart').getContext('2d');
         const chartData = ${JSON.stringify(chartData)};
         const timezone = '${timezone}';
+        const timezoneDisplay = '${timezoneDisplay}';
         
         // 最初のデータポイントと現在の日時のタイムスタンプ
         const firstTimestamp = ${firstDate.getTime()};
@@ -468,11 +473,16 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
                             },
                             title: {
                                 display: true,
-                                text: '日時'
+                                text: `日時 (${timezoneDisplay})`
                             },
                             ticks: {
                                 maxRotation: 45,
                                 minRotation: 45
+                            },
+                            adapters: {
+                                date: {
+                                    zone: timezone
+                                }
                             }
                         }
                     }
