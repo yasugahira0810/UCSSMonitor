@@ -104,6 +104,13 @@ jobs:
             echo "Error: docs/index.html does not contain the expected Chart.js content.";
             exit 1;
           fi
+          
+      - name: Upload docs artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: docs-artifact
+          path: docs/
+          retention-days: 1
 
   deploy:
     needs: update_graph
@@ -111,6 +118,12 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
+      
+      - name: Download docs artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: docs-artifact
+          path: docs/
 
       - name: Verify index.html exists
         run: |
@@ -118,9 +131,11 @@ jobs:
             echo "Error: index.html not found in docs directory.";
             exit 1;
           fi
+          cat docs/index.html | head -10
 
       - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v4
+        uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: docs
+          force_orphan: true
