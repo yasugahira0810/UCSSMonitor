@@ -81,8 +81,8 @@ export const logRemainingData = async (page) => {
     await page.waitForSelector(SELECTORS.remainingDataText, { timeout: 10000 });
     const remainingData = await page.$eval(SELECTORS.remainingDataText, el => el.innerText);
     
-    // Just output the raw value without any GitHub Actions directives
-    // GitHub Actions will capture this as the command output
+    // Ensure we format the value in a way that GitHub Actions can handle 
+    // First, trim any whitespace, then ensure it's interpreted as a string
     console.log(remainingData.trim());
   } catch (error) {
     await logErrorDetails(page, '残りデータ通信量の取得に失敗しました');
