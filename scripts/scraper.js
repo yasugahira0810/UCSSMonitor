@@ -57,6 +57,8 @@ export const login = async (page, email, password) => {
     if (!(await isLoggedIn(page))) {
       throw new Error('ログイン後のページに必要な要素が見つかりません');
     }
+    const currentUrl = page.url();
+    console.log(`ログイン成功: ${currentUrl}`);
   } catch (error) {
     await logErrorDetails(page, error.message);
     throw error;

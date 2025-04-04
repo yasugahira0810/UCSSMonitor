@@ -26,18 +26,18 @@ const remainingData = process.env.REMAINING_DATA;
       gist_id: process.env.GIST_ID // Use process.env.GIST_ID
     });
 
+    // Remove dynamic filename and force "data.json"
+    const fileName = 'data.json';
+
     // Validate Gist data
     if (!gistData.files || Object.keys(gistData.files).length === 0) {
       throw new Error('No files found in the Gist. Please check the Gist ID or its content.');
     }
 
-    // Dynamically get the file name (assuming there's only one file in the Gist)
-    const [fileName] = Object.keys(gistData.files);
-
     // Parse existing data from the Gist
     let existingData;
     try {
-      existingData = JSON.parse(gistData.files[fileName].content);
+      existingData = JSON.parse(gistData.files[fileName]?.content || '[]');
     } catch (parseError) {
       throw new Error('Failed to parse Gist content as JSON. Please check the Gist content.');
     }

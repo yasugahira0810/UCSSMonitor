@@ -25,14 +25,12 @@ import path from 'path';
     // Check if data.json exists in the fetched Gist
     if (!gistData.files || !gistData.files['data.json']) {
       console.warn('Warning: data.json file is missing in the Gist. Using default data.');
-      gistData.files = {
-        'data.json': { content: JSON.stringify([{ label: 'Default', value: 0 }]) }
-      };
+      gistData.files['data.json'] = { content: '[]' };
     }
 
     const dataContent = JSON.parse(gistData.files['data.json'].content);
-    const labels = dataContent.map(item => item.label);
-    const values = dataContent.map(item => item.value);
+    const labels = dataContent.map(item => item.date);
+    const values = dataContent.map(item => item.remainingData);
 
     const htmlContent = `<!DOCTYPE html>
 <html lang="en">
@@ -47,14 +45,13 @@ import path from 'path';
     <script>
         const ctx = document.getElementById('myChart').getContext('2d');
         new Chart(ctx, {
-            type: 'bar',
+            type: 'line',
             data: {
                 labels: ${JSON.stringify(labels)},
                 datasets: [
                     {
-                        label: 'Gist Data',
+                        label: 'Remaining Data',
                         data: ${JSON.stringify(values)},
-                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
                         borderColor: 'rgba(75, 192, 192, 1)',
                         borderWidth: 1
                     }
