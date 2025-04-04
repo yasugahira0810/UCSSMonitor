@@ -21,8 +21,9 @@ import { Octokit } from '@octokit/rest';
     });
     console.log('Gist data fetched successfully:', gistData);
 
-    const labels = gistData.files['data.json'].content.map(item => item.label);
-    const values = gistData.files['data.json'].content.map(item => item.value);
+    const dataContent = JSON.parse(gistData.files['data.json'].content);
+    const labels = dataContent.map(item => item.label);
+    const values = dataContent.map(item => item.value);
 
     const htmlContent = `<!DOCTYPE html>
 <html lang="en">

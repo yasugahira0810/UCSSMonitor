@@ -87,6 +87,13 @@ jobs:
             exit 1;
           fi
 
+      - name: Verify index.html content
+        run: |
+          if ! grep -q '<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>' docs/index.html; then
+            echo "Error: docs/index.html does not contain the expected Chart.js content.";
+            exit 1;
+          fi
+
   deploy:
     needs: update_graph
     runs-on: ubuntu-latest
@@ -101,7 +108,7 @@ jobs:
             exit 1;
           fi
 
-      - name: Deploy to GitHub Pagess
+      - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
