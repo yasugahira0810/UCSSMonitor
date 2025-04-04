@@ -161,10 +161,109 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
             color: #7f8c8d;
             font-size: 14px;
         }
+        .controls-container {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .control-group {
+            flex: 1;
+            min-width: 250px;
+            margin: 10px;
+        }
+        .control-item {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="range"] {
+            width: 100%;
+        }
+        input[type="number"] {
+            width: 60px;
+            padding: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        select {
+            padding: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .value-display {
+            display: inline-block;
+            margin-left: 10px;
+            font-size: 14px;
+            color: #555;
+        }
+        button {
+            padding: 8px 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
     </style>
 </head>
 <body>
     <h1>UCSS データ使用量モニター</h1>
+    
+    <div class="controls-container">
+        <div class="control-group">
+            <h3>縦軸の設定</h3>
+            <div class="control-item">
+                <label for="y-min">最小値</label>
+                <input type="range" id="y-min" min="0" max="50" value="0" step="1">
+                <input type="number" id="y-min-value" min="0" max="50" value="0">
+                <span class="value-display" id="y-min-display">0 GB</span>
+            </div>
+            <div class="control-item">
+                <label for="y-max">最大値</label>
+                <input type="range" id="y-max" min="10" max="200" value="${yAxisMax}" step="10">
+                <input type="number" id="y-max-value" min="10" max="200" value="${yAxisMax}">
+                <span class="value-display" id="y-max-display">${yAxisMax} GB</span>
+            </div>
+        </div>
+        
+        <div class="control-group">
+            <h3>横軸の設定</h3>
+            <div class="control-item">
+                <label for="x-unit">時間単位</label>
+                <select id="x-unit">
+                    <option value="hour">時間</option>
+                    <option value="day">日</option>
+                    <option value="week">週</option>
+                    <option value="month">月</option>
+                </select>
+            </div>
+            <div class="control-item">
+                <label for="x-display-format">表示形式</label>
+                <select id="x-display-format">
+                    <option value="MM/dd HH:mm">MM/dd HH:mm</option>
+                    <option value="MM/dd">MM/dd</option>
+                    <option value="yyyy/MM/dd">yyyy/MM/dd</option>
+                    <option value="HH:mm">HH:mm</option>
+                </select>
+            </div>
+            <div class="control-item">
+                <button id="apply-settings">設定を適用</button>
+                <button id="reset-settings">リセット</button>
+            </div>
+        </div>
+    </div>
     
     <div class="chart-container">
         <canvas id="myChart"></canvas>
@@ -179,88 +278,186 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
     </div>
     
     <script>
+        let myChart;
         const ctx = document.getElementById('myChart').getContext('2d');
+        const chartData = ${JSON.stringify(chartData)};
+        const timezone = '${timezone}';
         
-        new Chart(ctx, {
-            type: 'line',
-            data: {
-                datasets: [
-                    {
-                        label: '残りデータ量 (GB)',
-                        data: ${JSON.stringify(chartData)},
-                        borderColor: 'rgba(75, 192, 192, 1)',
-                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
-                        borderWidth: 2,
-                        tension: 0.1,
-                        fill: true,
-                        pointRadius: 3,
-                        pointHoverRadius: 5
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'top',
-                    },
-                    title: {
-                        display: false,
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                return "Remaining data: " + context.parsed.y.toFixed(2) + " GB";
-                            },
-                            title: function(tooltipItems) {
-                                const date = new Date(tooltipItems[0].parsed.x);
-                                return date.toLocaleString('ja-JP', {
-                                    year: 'numeric',
-                                    month: 'numeric',
-                                    day: 'numeric',
-                                    hour: '2-digit',
-                                    minute: '2-digit',
-                                    timeZone: '${timezone}'
-                                });
-                            }
+        // スケール設定の初期値
+        let chartSettings = {
+            yMin: 0,
+            yMax: ${yAxisMax},
+            xUnit: 'hour',
+            xDisplayFormat: 'MM/dd HH:mm'
+        };
+        
+        // グラフの初期化関数
+        function initChart(settings) {
+            if (myChart) {
+                myChart.destroy();
+            }
+            
+            myChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    datasets: [
+                        {
+                            label: '残りデータ量 (GB)',
+                            data: chartData,
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                            borderWidth: 2,
+                            tension: 0.1,
+                            fill: true,
+                            pointRadius: 3,
+                            pointHoverRadius: 5
                         }
-                    }
+                    ]
                 },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        max: ${yAxisMax},
-                        title: {
-                            display: true,
-                            text: '残りデータ量 (GB)'
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
                         },
-                        ticks: {
-                            callback: function(value) {
-                                return value.toFixed(1);
+                        title: {
+                            display: false,
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return "Remaining data: " + context.parsed.y.toFixed(2) + " GB";
+                                },
+                                title: function(tooltipItems) {
+                                    const date = new Date(tooltipItems[0].parsed.x);
+                                    return date.toLocaleString('ja-JP', {
+                                        year: 'numeric',
+                                        month: 'numeric',
+                                        day: 'numeric',
+                                        hour: '2-digit',
+                                        minute: '2-digit',
+                                        timeZone: timezone
+                                    });
+                                }
                             }
                         }
                     },
-                    x: {
-                        type: 'time',
-                        time: {
-                            unit: 'hour',
-                            displayFormats: {
-                                hour: 'MM/dd HH:mm'
+                    scales: {
+                        y: {
+                            beginAtZero: settings.yMin === 0,
+                            min: settings.yMin,
+                            max: settings.yMax,
+                            title: {
+                                display: true,
+                                text: '残りデータ量 (GB)'
                             },
-                            tooltipFormat: 'yyyy/MM/dd HH:mm'
+                            ticks: {
+                                callback: function(value) {
+                                    return value.toFixed(1);
+                                }
+                            }
                         },
-                        title: {
-                            display: true,
-                            text: '日時'
-                        },
-                        ticks: {
-                            maxRotation: 45,
-                            minRotation: 45
+                        x: {
+                            type: 'time',
+                            time: {
+                                unit: settings.xUnit,
+                                displayFormats: {
+                                    hour: settings.xDisplayFormat,
+                                    day: settings.xDisplayFormat,
+                                    week: settings.xDisplayFormat,
+                                    month: settings.xDisplayFormat
+                                },
+                                tooltipFormat: 'yyyy/MM/dd HH:mm'
+                            },
+                            title: {
+                                display: true,
+                                text: '日時'
+                            },
+                            ticks: {
+                                maxRotation: 45,
+                                minRotation: 45
+                            }
                         }
                     }
                 }
-            }
+            });
+        }
+        
+        // UIコントロールとイベントリスナーの設定
+        document.addEventListener('DOMContentLoaded', function() {
+            // 各要素の参照を取得
+            const yMinSlider = document.getElementById('y-min');
+            const yMaxSlider = document.getElementById('y-max');
+            const yMinValue = document.getElementById('y-min-value');
+            const yMaxValue = document.getElementById('y-max-value');
+            const yMinDisplay = document.getElementById('y-min-display');
+            const yMaxDisplay = document.getElementById('y-max-display');
+            const xUnit = document.getElementById('x-unit');
+            const xDisplayFormat = document.getElementById('x-display-format');
+            const applyButton = document.getElementById('apply-settings');
+            const resetButton = document.getElementById('reset-settings');
+            
+            // スライダーとテキスト入力を同期
+            yMinSlider.addEventListener('input', function() {
+                yMinValue.value = this.value;
+                yMinDisplay.textContent = this.value + ' GB';
+            });
+            
+            yMaxSlider.addEventListener('input', function() {
+                yMaxValue.value = this.value;
+                yMaxDisplay.textContent = this.value + ' GB';
+            });
+            
+            yMinValue.addEventListener('input', function() {
+                yMinSlider.value = this.value;
+                yMinDisplay.textContent = this.value + ' GB';
+            });
+            
+            yMaxValue.addEventListener('input', function() {
+                yMaxSlider.value = this.value;
+                yMaxDisplay.textContent = this.value + ' GB';
+            });
+            
+            // 設定適用ボタン
+            applyButton.addEventListener('click', function() {
+                chartSettings.yMin = Number(yMinValue.value);
+                chartSettings.yMax = Number(yMaxValue.value);
+                chartSettings.xUnit = xUnit.value;
+                chartSettings.xDisplayFormat = xDisplayFormat.value;
+                
+                // 入力値の検証
+                if (chartSettings.yMin >= chartSettings.yMax) {
+                    alert('最小値は最大値より小さくしてください');
+                    return;
+                }
+                
+                initChart(chartSettings);
+            });
+            
+            // リセットボタン
+            resetButton.addEventListener('click', function() {
+                yMinSlider.value = 0;
+                yMaxSlider.value = ${yAxisMax};
+                yMinValue.value = 0;
+                yMaxValue.value = ${yAxisMax};
+                yMinDisplay.textContent = '0 GB';
+                yMaxDisplay.textContent = '${yAxisMax} GB';
+                xUnit.value = 'hour';
+                xDisplayFormat.value = 'MM/dd HH:mm';
+                
+                chartSettings = {
+                    yMin: 0,
+                    yMax: ${yAxisMax},
+                    xUnit: 'hour',
+                    xDisplayFormat: 'MM/dd HH:mm'
+                };
+                
+                initChart(chartSettings);
+            });
+            
+            // 初期グラフ描画
+            initChart(chartSettings);
         });
     </script>
 </body>
