@@ -213,6 +213,70 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
         input[type="range"] {
             width: 100%;
         }
+        .range-slider {
+            position: relative;
+            margin-top: 30px;
+            margin-bottom: 40px;
+        }
+        .double-range {
+            position: absolute;
+            width: 100%;
+            pointer-events: none;
+        }
+        .range-track {
+            position: absolute;
+            width: 100%;
+            height: 5px;
+            background-color: #ddd;
+            top: 50%;
+            transform: translateY(-50%);
+            border-radius: 3px;
+        }
+        .range-selected {
+            position: absolute;
+            height: 5px;
+            background-color: rgba(75, 192, 192, 0.8);
+            top: 50%;
+            transform: translateY(-50%);
+            border-radius: 3px;
+        }
+        input[type="range"].range-min,
+        input[type="range"].range-max {
+            position: absolute;
+            width: 100%;
+            pointer-events: all;
+            -webkit-appearance: none;
+            appearance: none;
+            background: transparent;
+            margin: 0;
+            top: 0;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            background: #4CAF50;
+            cursor: pointer;
+            position: relative;
+            z-index: 1;
+        }
+        input[type="range"]::-moz-range-thumb {
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            background: #4CAF50;
+            cursor: pointer;
+            position: relative;
+            z-index: 1;
+            border: none;
+        }
+        .range-values {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+        }
         input[type="number"] {
             width: 60px;
             padding: 5px;
@@ -269,16 +333,23 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
         <div class="control-group">
             <h3>縦軸の設定</h3>
             <div class="control-item">
-                <label for="y-min">最小値</label>
-                <input type="range" id="y-min" min="0" max="50" value="${yAxisMin}" step="5">
-                <input type="number" id="y-min-value" min="0" max="50" value="${yAxisMin}">
-                <span class="value-display" id="y-min-display">${yAxisMin} GB</span>
-            </div>
-            <div class="control-item">
-                <label for="y-max">最大値</label>
-                <input type="range" id="y-max" min="10" max="200" value="${yAxisMax}" step="10">
-                <input type="number" id="y-max-value" min="10" max="200" value="${yAxisMax}">
-                <span class="value-display" id="y-max-display">${yAxisMax} GB</span>
+                <label for="y-range">Y軸の範囲 (最小値 - 最大値)</label>
+                <div class="range-slider">
+                    <div class="range-track"></div>
+                    <div class="range-selected" id="y-selected-range"></div>
+                    <input type="range" class="double-range range-min" id="y-min" min="0" max="200" value="${yAxisMin}" step="5">
+                    <input type="range" class="double-range range-max" id="y-max" min="0" max="200" value="${yAxisMax}" step="5">
+                </div>
+                <div class="range-values">
+                    <div>
+                        <input type="number" id="y-min-value" min="0" max="200" value="${yAxisMin}">
+                        <span class="value-display">GB (最小値)</span>
+                    </div>
+                    <div>
+                        <input type="number" id="y-max-value" min="0" max="200" value="${yAxisMax}">
+                        <span class="value-display">GB (最大値)</span>
+                    </div>
+                </div>
             </div>
         </div>
         
@@ -411,68 +482,85 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
         
         // UIコントロールとイベントリスナーの設定
         document.addEventListener('DOMContentLoaded', function() {
-            // 各要素の参照を取得
+            // 要素の参照を取得
             const yMinSlider = document.getElementById('y-min');
-            const yMinValue = document.getElementById('y-min-value');
-            const yMinDisplay = document.getElementById('y-min-display');
             const yMaxSlider = document.getElementById('y-max');
+            const yMinValue = document.getElementById('y-min-value');
             const yMaxValue = document.getElementById('y-max-value');
-            const yMaxDisplay = document.getElementById('y-max-display');
+            const ySelectedRange = document.getElementById('y-selected-range');
             const xMin = document.getElementById('x-min');
             const xMax = document.getElementById('x-max');
             const applyButton = document.getElementById('apply-settings');
             const resetButton = document.getElementById('reset-settings');
             
-            // 最小値スライダーとテキスト入力を同期
+            // Y軸の範囲スライダーの表示を更新する関数
+            function updateRangeSlider() {
+                const minVal = parseInt(yMinSlider.value);
+                const maxVal = parseInt(yMaxSlider.value);
+                const minPercent = (minVal / yMinSlider.max) * 100;
+                const maxPercent = (maxVal / yMaxSlider.max) * 100;
+                
+                ySelectedRange.style.left = minPercent + '%';
+                ySelectedRange.style.width = (maxPercent - minPercent) + '%';
+            }
+            
+            // 初期状態で範囲スライダーを更新
+            updateRangeSlider();
+            
+            // 最小値スライダーのイベントリスナー
             yMinSlider.addEventListener('input', function() {
+                const minVal = parseInt(this.value);
+                const maxVal = parseInt(yMaxSlider.value);
+                
+                // 最小値が最大値を超えないようにする
+                if (minVal >= maxVal) {
+                    this.value = maxVal - 5;
+                }
+                
                 yMinValue.value = this.value;
-                yMinDisplay.textContent = this.value + ' GB';
-                
-                // 最小値が最大値を超えないようにする
-                if (parseInt(this.value) >= parseInt(yMaxSlider.value)) {
-                    yMaxSlider.value = parseInt(this.value) + 10;
-                    yMaxValue.value = yMaxSlider.value;
-                    yMaxDisplay.textContent = yMaxSlider.value + ' GB';
-                }
+                updateRangeSlider();
             });
             
-            yMinValue.addEventListener('input', function() {
-                yMinSlider.value = this.value;
-                yMinDisplay.textContent = this.value + ' GB';
-                
-                // 最小値が最大値を超えないようにする
-                if (parseInt(this.value) >= parseInt(yMaxValue.value)) {
-                    yMaxValue.value = parseInt(this.value) + 10;
-                    yMaxSlider.value = yMaxValue.value;
-                    yMaxDisplay.textContent = yMaxValue.value + ' GB';
-                }
-            });
-            
-            // 最大値スライダーとテキスト入力を同期
+            // 最大値スライダーのイベントリスナー
             yMaxSlider.addEventListener('input', function() {
-                yMaxValue.value = this.value;
-                yMaxDisplay.textContent = this.value + ' GB';
+                const minVal = parseInt(yMinSlider.value);
+                const maxVal = parseInt(this.value);
                 
                 // 最大値が最小値を下回らないようにする
-                if (parseInt(this.value) <= parseInt(yMinSlider.value)) {
-                    yMinSlider.value = parseInt(this.value) - 10;
-                    if (yMinSlider.value < 0) yMinSlider.value = 0;
-                    yMinValue.value = yMinSlider.value;
-                    yMinDisplay.textContent = yMinSlider.value + ' GB';
+                if (maxVal <= minVal) {
+                    this.value = minVal + 5;
                 }
+                
+                yMaxValue.value = this.value;
+                updateRangeSlider();
             });
             
+            // 最小値入力フィールドのイベントリスナー
+            yMinValue.addEventListener('input', function() {
+                const minVal = parseInt(this.value);
+                const maxVal = parseInt(yMaxValue.value);
+                
+                // 最小値が最大値を超えないようにする
+                if (minVal >= maxVal) {
+                    this.value = maxVal - 5;
+                }
+                
+                yMinSlider.value = this.value;
+                updateRangeSlider();
+            });
+            
+            // 最大値入力フィールドのイベントリスナー
             yMaxValue.addEventListener('input', function() {
-                yMaxSlider.value = this.value;
-                yMaxDisplay.textContent = this.value + ' GB';
+                const minVal = parseInt(yMinValue.value);
+                const maxVal = parseInt(this.value);
                 
                 // 最大値が最小値を下回らないようにする
-                if (parseInt(this.value) <= parseInt(yMinValue.value)) {
-                    yMinValue.value = parseInt(this.value) - 10;
-                    if (yMinValue.value < 0) yMinValue.value = 0;
-                    yMinSlider.value = yMinValue.value;
-                    yMinDisplay.textContent = yMinValue.value + ' GB';
+                if (maxVal <= minVal) {
+                    this.value = minVal + 5;
                 }
+                
+                yMaxSlider.value = this.value;
+                updateRangeSlider();
             });
             
             // 設定適用ボタン
@@ -505,10 +593,8 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
             resetButton.addEventListener('click', function() {
                 yMinSlider.value = ${yAxisMin};
                 yMinValue.value = ${yAxisMin};
-                yMinDisplay.textContent = '${yAxisMin} GB';
                 yMaxSlider.value = ${yAxisMax};
                 yMaxValue.value = ${yAxisMax};
-                yMaxDisplay.textContent = '${yAxisMax} GB';
                 xMin.value = '${firstDateFormatted}';
                 xMax.value = '${currentDateFormatted}';  // リセット時も最終更新時刻を使用
                 
@@ -519,6 +605,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
                     xMax: currentTimestamp  // リセット時も現在の時刻を使用
                 };
                 
+                updateRangeSlider();
                 initChart(chartSettings);
             });
             
