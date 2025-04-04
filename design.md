@@ -23,7 +23,7 @@
 - ログイン後のページに「サービス詳細」ページへのリンクのCSSセレクタが表示されるまで待つ
 - UCSSの「サービスの詳細」ページへ遷移して残りデータ通信量を取得
 - Gist(https://gist.github.com/(process.env.GIST_USER)/(process.env.GIST_ID))を、データ保存（Gist）のフォーマットに従って、更新
-- Gistの更新を契機に次のGitHub Actionsを動かしてChart.jsを使ってindex.htmlを生成
+- Gistの更新を契機に次のGitHub Actionsを動かして、横軸がdateで、縦軸がremainingDataの積み上げ折れ線グラフをChart.jsを使ってindex.htmlを生成
 - 再生成したグラフをpeaceiris/actions-gh-pages@v4を使って、GitHub Pagesへデプロイ
 
 ### セキュリティ：
