@@ -128,11 +128,17 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
       yAxisMax = Math.ceil(maxValue / 50) * 50;
     }
 
+    // Y軸の最小値をデフォルトで0に設定
+    const yAxisMin = 0;
+
     // 時間範囲の設定用に最初と最後のデータポイントの日時を取得
     const firstDataPoint = filteredData[0];
     const lastDataPoint = filteredData[filteredData.length - 1];
     const firstDate = new Date(firstDataPoint.date);
     const lastDate = new Date(lastDataPoint.date);
+    
+    // 現在の日時を取得（最終更新時間として使用）
+    const currentDate = new Date();
     
     // 日時フォーマット関数（YYYY-MM-DDThh形式に変換）
     const formatDateForInput = (date) => {
@@ -145,6 +151,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
     
     const firstDateFormatted = formatDateForInput(firstDate);
     const lastDateFormatted = formatDateForInput(lastDate);
+    const currentDateFormatted = formatDateForInput(currentDate);
     
     const htmlContent = `<!DOCTYPE html>
 <html lang="en">
@@ -261,6 +268,12 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
         <div class="control-group">
             <h3>縦軸の設定</h3>
             <div class="control-item">
+                <label for="y-min">最小値</label>
+                <input type="range" id="y-min" min="0" max="50" value="${yAxisMin}" step="5">
+                <input type="number" id="y-min-value" min="0" max="50" value="${yAxisMin}">
+                <span class="value-display" id="y-min-display">${yAxisMin} GB</span>
+            </div>
+            <div class="control-item">
                 <label for="y-max">最大値</label>
                 <input type="range" id="y-max" min="10" max="200" value="${yAxisMax}" step="10">
                 <input type="number" id="y-max-value" min="10" max="200" value="${yAxisMax}">
@@ -272,11 +285,11 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
             <h3>横軸の設定</h3>
             <div class="control-item">
                 <label for="x-min">開始日時</label>
-                <input type="datetime-local" id="x-min" value="${firstDateFormatted}" min="${firstDateFormatted}" max="${lastDateFormatted}">
+                <input type="datetime-local" id="x-min" value="${firstDateFormatted}" min="${firstDateFormatted}" max="${currentDateFormatted}">
             </div>
             <div class="control-item">
                 <label for="x-max">終了日時</label>
-                <input type="datetime-local" id="x-max" value="${lastDateFormatted}" min="${firstDateFormatted}" max="${lastDateFormatted}">
+                <input type="datetime-local" id="x-max" value="${currentDateFormatted}" min="${firstDateFormatted}" max="${currentDateFormatted}">
             </div>
             <div class="control-item">
                 <button id="apply-settings">設定を適用</button>
@@ -291,15 +304,17 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
         const chartData = ${JSON.stringify(chartData)};
         const timezone = '${timezone}';
         
-        // 最初と最後のデータポイントのタイムスタンプ
+        // 最初のデータポイントと現在の日時のタイムスタンプ
         const firstTimestamp = ${firstDate.getTime()};
         const lastTimestamp = ${lastDate.getTime()};
+        const currentTimestamp = ${currentDate.getTime()};
         
         // スケール設定の初期値
         let chartSettings = {
+            yMin: ${yAxisMin},
             yMax: ${yAxisMax},
             xMin: firstTimestamp,
-            xMax: lastTimestamp
+            xMax: currentTimestamp
         };
         
         // グラフの初期化関数
@@ -356,8 +371,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
                     },
                     scales: {
                         y: {
-                            beginAtZero: true,
-                            min: 0,
+                            min: settings.yMin,
                             max: settings.yMax,
                             title: {
                                 display: true,
@@ -397,6 +411,9 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
         // UIコントロールとイベントリスナーの設定
         document.addEventListener('DOMContentLoaded', function() {
             // 各要素の参照を取得
+            const yMinSlider = document.getElementById('y-min');
+            const yMinValue = document.getElementById('y-min-value');
+            const yMinDisplay = document.getElementById('y-min-display');
             const yMaxSlider = document.getElementById('y-max');
             const yMaxValue = document.getElementById('y-max-value');
             const yMaxDisplay = document.getElementById('y-max-display');
@@ -405,19 +422,61 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
             const applyButton = document.getElementById('apply-settings');
             const resetButton = document.getElementById('reset-settings');
             
-            // スライダーとテキスト入力を同期
+            // 最小値スライダーとテキスト入力を同期
+            yMinSlider.addEventListener('input', function() {
+                yMinValue.value = this.value;
+                yMinDisplay.textContent = this.value + ' GB';
+                
+                // 最小値が最大値を超えないようにする
+                if (parseInt(this.value) >= parseInt(yMaxSlider.value)) {
+                    yMaxSlider.value = parseInt(this.value) + 10;
+                    yMaxValue.value = yMaxSlider.value;
+                    yMaxDisplay.textContent = yMaxSlider.value + ' GB';
+                }
+            });
+            
+            yMinValue.addEventListener('input', function() {
+                yMinSlider.value = this.value;
+                yMinDisplay.textContent = this.value + ' GB';
+                
+                // 最小値が最大値を超えないようにする
+                if (parseInt(this.value) >= parseInt(yMaxValue.value)) {
+                    yMaxValue.value = parseInt(this.value) + 10;
+                    yMaxSlider.value = yMaxValue.value;
+                    yMaxDisplay.textContent = yMaxValue.value + ' GB';
+                }
+            });
+            
+            // 最大値スライダーとテキスト入力を同期
             yMaxSlider.addEventListener('input', function() {
                 yMaxValue.value = this.value;
                 yMaxDisplay.textContent = this.value + ' GB';
+                
+                // 最大値が最小値を下回らないようにする
+                if (parseInt(this.value) <= parseInt(yMinSlider.value)) {
+                    yMinSlider.value = parseInt(this.value) - 10;
+                    if (yMinSlider.value < 0) yMinSlider.value = 0;
+                    yMinValue.value = yMinSlider.value;
+                    yMinDisplay.textContent = yMinSlider.value + ' GB';
+                }
             });
             
             yMaxValue.addEventListener('input', function() {
                 yMaxSlider.value = this.value;
                 yMaxDisplay.textContent = this.value + ' GB';
+                
+                // 最大値が最小値を下回らないようにする
+                if (parseInt(this.value) <= parseInt(yMinValue.value)) {
+                    yMinValue.value = parseInt(this.value) - 10;
+                    if (yMinValue.value < 0) yMinValue.value = 0;
+                    yMinSlider.value = yMinValue.value;
+                    yMinDisplay.textContent = yMinValue.value + ' GB';
+                }
             });
             
             // 設定適用ボタン
             applyButton.addEventListener('click', function() {
+                chartSettings.yMin = Number(yMinValue.value);
                 chartSettings.yMax = Number(yMaxValue.value);
                 
                 // 日時入力から時間を取得
@@ -433,21 +492,30 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
                     return;
                 }
                 
+                if (chartSettings.yMin >= chartSettings.yMax) {
+                    alert('最小値は最大値より小さくしてください');
+                    return;
+                }
+                
                 initChart(chartSettings);
             });
             
             // リセットボタン
             resetButton.addEventListener('click', function() {
+                yMinSlider.value = ${yAxisMin};
+                yMinValue.value = ${yAxisMin};
+                yMinDisplay.textContent = '${yAxisMin} GB';
                 yMaxSlider.value = ${yAxisMax};
                 yMaxValue.value = ${yAxisMax};
                 yMaxDisplay.textContent = '${yAxisMax} GB';
                 xMin.value = '${firstDateFormatted}';
-                xMax.value = '${lastDateFormatted}';
+                xMax.value = '${currentDateFormatted}';
                 
                 chartSettings = {
+                    yMin: ${yAxisMin},
                     yMax: ${yAxisMax},
                     xMin: firstTimestamp,
-                    xMax: lastTimestamp
+                    xMax: currentTimestamp
                 };
                 
                 initChart(chartSettings);
