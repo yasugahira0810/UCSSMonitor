@@ -274,9 +274,9 @@ function generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, ti
             margin-bottom: 40px;
         }
         .double-range {
-            position: absolute;
+            position: relative;
             width: 100%;
-            pointer-events: none;
+            margin-top: 20px;
         }
         .range-track {
             position: absolute;
@@ -295,16 +295,13 @@ function generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, ti
             transform: translateY(-50%);
             border-radius: 3px;
         }
-        input[type="range"].range-min,
-        input[type="range"].range-max {
-            position: absolute;
-            width: 100%;
-            pointer-events: all;
+        input[type="range"] {
             -webkit-appearance: none;
             appearance: none;
+            width: 100%;
             background: transparent;
-            margin: 0;
-            top: 0;
+            position: relative;
+            z-index: 2;
         }
         input[type="range"]::-webkit-slider-thumb {
             -webkit-appearance: none;
@@ -315,7 +312,7 @@ function generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, ti
             background: #4CAF50;
             cursor: pointer;
             position: relative;
-            z-index: 1;
+            z-index: 3;
         }
         input[type="range"]::-moz-range-thumb {
             width: 15px;
@@ -324,7 +321,7 @@ function generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, ti
             background: #4CAF50;
             cursor: pointer;
             position: relative;
-            z-index: 1;
+            z-index: 3;
             border: none;
         }
         .range-values {
@@ -410,6 +407,20 @@ function generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, ti
     
     <div class="controls-container">
         <div class="control-group">
+            <h3>縦軸の設定</h3>
+            <div class="control-item">
+                <label for="y-range">データ量範囲（最小値：<span id="y-min-value">${yAxisMin}</span> - 最大値：<span id="y-max-value">${yAxisMax}</span>）</label>
+                <div class="double-range">
+                    <input type="range" id="y-range" min="0" max="${yAxisMax * 2}" step="5" value="${yAxisMax}">
+                    <div class="range-values">
+                        <span>0</span>
+                        <span>${yAxisMax * 2}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="control-group">
             <h3>横軸の設定</h3>
             <div class="datetime-controls">
                 <div class="datetime-control-item">
@@ -420,18 +431,6 @@ function generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, ti
                     <label for="x-max">終了日時 (${timezoneDisplay})</label>
                     <input type="datetime-local" id="x-max" value="${currentDateFormatted}" min="${firstDateFormatted}" max="${currentDateFormatted}">
                 </div>
-            </div>
-        </div>
-        
-        <div class="control-group">
-            <h3>縦軸の設定</h3>
-            <div class="control-item">
-                <label for="y-min">最小値</label>
-                <input type="number" id="y-min" min="0" max="${yAxisMax}" step="1" value="${yAxisMin}">
-            </div>
-            <div class="control-item">
-                <label for="y-max">最大値</label>
-                <input type="number" id="y-max" min="${yAxisMin}" step="5" value="${yAxisMax}">
             </div>
         </div>
         
@@ -561,10 +560,19 @@ function generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, ti
         function setupEventListeners() {
             const xMin = document.getElementById('x-min');
             const xMax = document.getElementById('x-max');
-            const yMin = document.getElementById('y-min');
-            const yMax = document.getElementById('y-max');
+            const yRange = document.getElementById('y-range');
+            const yMinValueDisplay = document.getElementById('y-min-value');
+            const yMaxValueDisplay = document.getElementById('y-max-value');
             const applyButton = document.getElementById('apply-settings');
             const resetButton = document.getElementById('reset-settings');
+            
+            // Y軸スライダーの値更新時
+            yRange.addEventListener('input', function() {
+                chartSettings.yMax = parseInt(this.value);
+                chartSettings.yMin = 0; // 最小値は常に0
+                yMinValueDisplay.textContent = chartSettings.yMin;
+                yMaxValueDisplay.textContent = chartSettings.yMax;
+            });
             
             // 設定適用ボタン
             applyButton.addEventListener('click', function() {
@@ -573,8 +581,6 @@ function generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, ti
                 
                 chartSettings.xMin = xMinDate.getTime();
                 chartSettings.xMax = xMaxDate.getTime();
-                chartSettings.yMin = parseFloat(yMin.value);
-                chartSettings.yMax = parseFloat(yMax.value);
                 
                 // 入力値の検証
                 if (chartSettings.xMin >= chartSettings.xMax) {
@@ -594,8 +600,9 @@ function generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, ti
             resetButton.addEventListener('click', function() {
                 xMin.value = '${firstDateFormatted}';
                 xMax.value = '${currentDateFormatted}';
-                yMin.value = ${yAxisMin};
-                yMax.value = ${yAxisMax};
+                yRange.value = ${yAxisMax};
+                yMinValueDisplay.textContent = ${yAxisMin};
+                yMaxValueDisplay.textContent = ${yAxisMax};
                 
                 chartSettings = {
                     yMin: ${yAxisMin},
