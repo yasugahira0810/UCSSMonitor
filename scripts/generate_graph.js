@@ -423,6 +423,18 @@ function generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, ti
             </div>
         </div>
         
+        <div class="control-group">
+            <h3>縦軸の設定</h3>
+            <div class="control-item">
+                <label for="y-min">最小値</label>
+                <input type="number" id="y-min" min="0" max="${yAxisMax}" step="1" value="${yAxisMin}">
+            </div>
+            <div class="control-item">
+                <label for="y-max">最大値</label>
+                <input type="number" id="y-max" min="${yAxisMin}" step="5" value="${yAxisMax}">
+            </div>
+        </div>
+        
         <div class="buttons-group">
             <button id="apply-settings">設定を適用</button>
             <button id="reset-settings">リセット</button>
@@ -549,6 +561,8 @@ function generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, ti
         function setupEventListeners() {
             const xMin = document.getElementById('x-min');
             const xMax = document.getElementById('x-max');
+            const yMin = document.getElementById('y-min');
+            const yMax = document.getElementById('y-max');
             const applyButton = document.getElementById('apply-settings');
             const resetButton = document.getElementById('reset-settings');
             
@@ -559,10 +573,17 @@ function generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, ti
                 
                 chartSettings.xMin = xMinDate.getTime();
                 chartSettings.xMax = xMaxDate.getTime();
+                chartSettings.yMin = parseFloat(yMin.value);
+                chartSettings.yMax = parseFloat(yMax.value);
                 
                 // 入力値の検証
                 if (chartSettings.xMin >= chartSettings.xMax) {
                     alert('開始日時は終了日時より前にしてください');
+                    return;
+                }
+                
+                if (chartSettings.yMin >= chartSettings.yMax) {
+                    alert('Y軸の最小値は最大値より小さくしてください');
                     return;
                 }
                 
@@ -573,6 +594,8 @@ function generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, ti
             resetButton.addEventListener('click', function() {
                 xMin.value = '${firstDateFormatted}';
                 xMax.value = '${currentDateFormatted}';
+                yMin.value = ${yAxisMin};
+                yMax.value = ${yAxisMax};
                 
                 chartSettings = {
                     yMin: ${yAxisMin},
