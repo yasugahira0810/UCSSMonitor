@@ -1,0 +1,26 @@
+name: Deploy GitHub Pages
+
+on:
+  workflow_run:
+    workflows: ["UCSSMonitor Job"]  # GitHub Actions1が完了したら実行
+    types:
+      - completed
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Download index.html artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: index-html
+          path: docs
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: docs
