@@ -17,8 +17,13 @@ jobs:
       - name: Download index.html artifact
         uses: actions/download-artifact@v4.2.1
         with:
-          name: index-html  # Ensure this matches the artifact name in the previous job
-          path: docs
+          name: index-html
+          path: .
+
+      - name: Move index.html to docs directory
+        run: |
+          mkdir -p docs
+          cp index-html/index.html docs/index.html
 
       - name: Verify index.html exists
         run: |
