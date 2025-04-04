@@ -1,12 +1,36 @@
+以下はサンプルの index.html のコードです：
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>UCSSMonitor</title>
+    <meta charset="UTF-8">
+    <title>積み上げ折れ線グラフ</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-  <div id="app"></div>
-  <script src="/dist/build.js"></script>
+    <canvas id="myChart"></canvas>
+<script>
+        const data = [
+            {"date": "2022-01-01", "remainingData": 100},
+            {"date": "2022-01-02", "remainingData": 150},
+            {"date": "2022-01-03", "remainingData": 120},
+            {"date": "2022-01-04", "remainingData": 180}
+        ];
+const labels = data.map(item => new Date(item.date).toLocaleDateString());
+        const values = data.map(item => item.remainingData);
+const ctx = document.getElementById('myChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Remaining Data',
+                    data: values,
+                    fill: true,
+                    borderColor: 'rgb(75, 192, 192)',
+                    tension: 0.1
+                }]
+            }
+        });
+    </script>
 </body>
 </html>

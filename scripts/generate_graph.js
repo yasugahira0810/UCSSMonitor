@@ -2,6 +2,7 @@ import fs from 'fs';
 import Chart from 'chart.js/auto';
 import fetch from 'node-fetch';
 import { Octokit } from '@octokit/rest';
+import path from 'path';
 
 (async () => {
   const octokit = new Octokit({ 
@@ -15,6 +16,15 @@ import { Octokit } from '@octokit/rest';
   console.log('GIST_ID:', process.env.GIST_ID);
   console.log('Constructed Gist URL:', gistUrl);
 
+  const gistPath = path.join(__dirname, 'path_to_gist', 'data.json');
+
+  if (!fs.existsSync(gistPath)) {
+    console.error('Error: data.json file is missing in the Gist. Please ensure the file is uploaded to the Gist.');
+    process.exit(1);
+  }
+
+  const data = fs.readFileSync(gistPath, 'utf8');
+
   try {
     const { data: gistData } = await octokit.gists.get({
       gist_id: process.env.GIST_ID
@@ -23,7 +33,10 @@ import { Octokit } from '@octokit/rest';
 
     // Check if data.json exists in the fetched Gist
     if (!gistData.files || !gistData.files['data.json']) {
-      throw new Error('data.json file is missing in the Gist.');
+      console.warn('Warning: data.json file is missing in the Gist. Using default data.');
+      gistData.files = {
+        'data.json': { content: JSON.stringify([{ label: 'Default', value: 0 }]) }
+      };
     }
 
     const dataContent = JSON.parse(gistData.files['data.json'].content);
