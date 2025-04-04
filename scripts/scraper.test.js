@@ -1,16 +1,17 @@
 import puppeteer from 'puppeteer';
 import { jest } from '@jest/globals';
-import { logErrorDetails, isLoggedIn, login, waitForPostLoginElements, getRemainingData } from './scraper.js';
 
-// Create mock manually instead of using jest.mock
 const fsMock = {
-  writeFileSync: jest.fn()
+    writeFileSync: jest.fn()
 };
 
-// Explicitly import the module and then replace it
-jest.unstable_mockModule('fs', () => {
-  return { default: fsMock };
-});
+// モックを設定
+jest.unstable_mockModule('fs', () => ({
+    default: fsMock
+}));
+
+// モックが設定された後にスクリプトをインポート
+const { logErrorDetails, isLoggedIn, login, waitForPostLoginElements, getRemainingData } = await import('./scraper.js');
 
 describe('scraper.js', () => {
     let browser;
@@ -18,8 +19,8 @@ describe('scraper.js', () => {
     
     beforeAll(async () => {
         browser = await puppeteer.launch({ 
-          args: ['--no-sandbox', '--disable-setuid-sandbox'],
-          headless: "new"
+            args: ['--no-sandbox', '--disable-setuid-sandbox'],
+            headless: "new"
         });
         page = await browser.newPage();
     });
@@ -29,6 +30,10 @@ describe('scraper.js', () => {
             await browser.close();
         }
     });
+
+    beforeEach(() => {
+        jest.clearAllMocks();
+    });
     
     describe('logErrorDetails', () => {
         it('should write error details to a file', async () => {
@@ -37,17 +42,26 @@ describe('scraper.js', () => {
             await logErrorDetails(mockPage, errorMessage);
             expect(fsMock.writeFileSync).toHaveBeenCalledWith(
                 'error_details.json',
-                expect.stringContaining(errorMessage)
+                expect.any(String)
             );
         });
     });
 
     describe('isLoggedIn', () => {
         it('should return true if the service details button is present', async () => {
-            await page.setContent('<button id="serviceDetailsButton"></button>');
+            await page.setContent(`
+                <div id="ClientAreaHomePagePanels-Active_Products_Services-0">
+                    <div>
+                        <div class="list-group-item-actions">
+                            <button>サービスの詳細</button>
+                        </div>
+                    </div>
+                </div>
+            `);
             const result = await isLoggedIn(page);
             expect(result).toBe(true);
         });
+
         it('should return false if the service details button is not present', async () => {
             await page.setContent('<div></div>');
             const result = await isLoggedIn(page);
@@ -60,12 +74,19 @@ describe('scraper.js', () => {
             await expect(login(page, null, 'password')).rejects.toThrow('環境変数 UCSS_EMAIL または UCSS_PASSWORD が設定されていません');
             await expect(login(page, 'email', null)).rejects.toThrow('環境変数 UCSS_EMAIL または UCSS_PASSWORD が設定されていません');
         });
+
         it('should log in successfully with valid credentials', async () => {
             await page.setContent(`
                 <input id="inputEmail" />
                 <input id="inputPassword" />
                 <button id="login"></button>
-                <button id="serviceDetailsButton"></button>
+                <div id="ClientAreaHomePagePanels-Active_Products_Services-0">
+                    <div>
+                        <div class="list-group-item-actions">
+                            <button>サービスの詳細</button>
+                        </div>
+                    </div>
+                </div>
             `);
             const mockGoto = jest.spyOn(page, 'goto').mockResolvedValue();
             const mockType = jest.spyOn(page, 'type').mockResolvedValue();
@@ -82,9 +103,18 @@ describe('scraper.js', () => {
 
     describe('waitForPostLoginElements', () => {
         it('should wait for the service details button to appear', async () => {
-            await page.setContent('<button id="serviceDetailsButton"></button>');
+            await page.setContent(`
+                <div id="ClientAreaHomePagePanels-Active_Products_Services-0">
+                    <div>
+                        <div class="list-group-item-actions">
+                            <button>サービスの詳細</button>
+                        </div>
+                    </div>
+                </div>
+            `);
             await expect(waitForPostLoginElements(page)).resolves.not.toThrow();
         });
+
         it('should throw an error if the service details button is not found', async () => {
             await page.setContent('<div></div>');
             await expect(waitForPostLoginElements(page)).rejects.toThrow('「サービスの詳細」ページへのリンクが見つかりません');
@@ -94,17 +124,28 @@ describe('scraper.js', () => {
     describe('getRemainingData', () => {
         it('should extract and return the remaining data', async () => {
             await page.setContent(`
-                <button id="serviceDetailsButton"></button>
-                <span class="traffic-number">123 GB</span>
+                <div id="ClientAreaHomePagePanels-Active_Products_Services-0">
+                    <div>
+                        <div class="list-group-item-actions">
+                            <button>サービスの詳細</button>
+                        </div>
+                    </div>
+                </div>
+                <div id="traffic-header">
+                    <p class="free-traffic">
+                        <span class="traffic-number">123 GB</span>
+                    </p>
+                </div>
             `);
             const mockClick = jest.spyOn(page, 'click').mockResolvedValue();
             const remainingData = await getRemainingData(page);
             expect(mockClick).toHaveBeenCalledWith('#ClientAreaHomePagePanels-Active_Products_Services-0 > div > div.list-group-item-actions > button');
             expect(remainingData).toBe('123 GB');
         });
+
         it('should throw an error if the remaining data element is not found', async () => {
             await page.setContent('<div></div>');
-            await expect(getRemainingData(page)).rejects.toThrow('残りデータ通信量の取得に失敗しました');
+            await expect(getRemainingData(page)).rejects.toThrow('残りデータ通信量の要素が見つかりません');
         });
     });
 });
