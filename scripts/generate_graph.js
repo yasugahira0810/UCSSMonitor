@@ -199,6 +199,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
     
     <script>
         const ctx = document.getElementById('myChart').getContext('2d');
+        const yAxisMax = ${yAxisMax}; // yAxisMax変数をHTML側のJavaScriptでも定義
         new Chart(ctx, {
             type: 'line',
             data: {
