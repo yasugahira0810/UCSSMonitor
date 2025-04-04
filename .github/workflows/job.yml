@@ -27,9 +27,9 @@ jobs:
         
       - name: Run tests
         run: |
-          echo "Creating jest.config.js for puppeteer compatibility"
-          echo "export default { transformIgnorePatterns: ['node_modules/(?!(@puppeteer)/)'] };" > jest.config.js
-          node --experimental-vm-modules node_modules/jest/bin/jest.js
+          # Use package.json Jest config by explicitly specifying --no-config
+          # This avoids creating a separate jest.config.js file
+          node --experimental-vm-modules node_modules/jest/bin/jest.js --no-config
   
   scrape_and_record:
     needs: run_tests
