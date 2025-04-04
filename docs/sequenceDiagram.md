@@ -1,3 +1,4 @@
+```mermaid
 sequenceDiagram
     participant Developer
     participant GitHub Actions
@@ -24,3 +25,4 @@ sequenceDiagram
     update_graph->>generate_graph.js: Retrieve data.json from Gist
     generate_graph.js->>generate_graph.js: Build docs/index.html
     GitHub Actions->>deploy: Deploy docs to GitHub Pages
+```
