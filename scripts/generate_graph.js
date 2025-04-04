@@ -634,35 +634,43 @@ function generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, ti
             
             // Y軸の最小値スライダーの更新時
             yMinRange.addEventListener('input', function() {
-                const minValue = parseInt(this.value);
+                let minValue = parseInt(this.value);
                 const maxValue = parseInt(yMaxRange.value);
                 
+                // 最小値と最大値の制約
+                if (minValue < 0) minValue = 0;
+                if (minValue > Y_AXIS_MAX_LIMIT) minValue = Y_AXIS_MAX_LIMIT;
+                
                 if (minValue > maxValue) {
-                    this.value = maxValue;
-                    chartSettings.yMin = maxValue;
-                } else {
-                    chartSettings.yMin = minValue;
+                    minValue = maxValue;
+                    this.value = minValue;
                 }
                 
+                chartSettings.yMin = minValue;
+                
                 // 数値入力フィールドも更新
-                yMinInput.value = chartSettings.yMin;
+                yMinInput.value = minValue;
                 updateSelectedRange();
             });
             
             // Y軸の最大値スライダーの更新時
             yMaxRange.addEventListener('input', function() {
-                const maxValue = parseInt(this.value);
+                let maxValue = parseInt(this.value);
                 const minValue = parseInt(yMinRange.value);
                 
+                // 最小値と最大値の制約
+                if (maxValue < 0) maxValue = 0;
+                if (maxValue > Y_AXIS_MAX_LIMIT) maxValue = Y_AXIS_MAX_LIMIT;
+                
                 if (maxValue < minValue) {
-                    this.value = minValue;
-                    chartSettings.yMax = minValue;
-                } else {
-                    chartSettings.yMax = maxValue;
+                    maxValue = minValue;
+                    this.value = maxValue;
                 }
                 
+                chartSettings.yMax = maxValue;
+                
                 // 数値入力フィールドも更新
-                yMaxInput.value = chartSettings.yMax;
+                yMaxInput.value = maxValue;
                 updateSelectedRange();
             });
             
@@ -680,9 +688,9 @@ function generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, ti
                 
                 if (minValue > maxValue) {
                     minValue = maxValue;
-                    this.value = maxValue;
                 }
                 
+                this.value = minValue;
                 chartSettings.yMin = minValue;
                 
                 // スライダーも更新
@@ -704,9 +712,9 @@ function generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, ti
                 
                 if (maxValue < minValue) {
                     maxValue = minValue;
-                    this.value = minValue;
                 }
                 
+                this.value = maxValue;
                 chartSettings.yMax = maxValue;
                 
                 // スライダーも更新
