@@ -27,9 +27,8 @@ jobs:
         
       - name: Run tests
         run: |
-          # Use package.json Jest config by explicitly specifying --no-config
-          # This avoids creating a separate jest.config.js file
-          node --experimental-vm-modules node_modules/jest/bin/jest.js --no-config
+          # Use npm test which uses the Jest config from package.json
+          npm test
   
   scrape_and_record:
     needs: run_tests

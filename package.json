@@ -45,13 +45,15 @@
   },
   "jest": {
     "transform": {
-      "^.+\\.[tj]sx?$": "babel-jest"
+      "^.+\\.m?[tj]sx?$": "babel-jest"
     },
     "testEnvironment": "node",
     "moduleNameMapper": {
       "^(\\.{1,2}/.*)\\.js$": "$1"
     },
-    "setupFilesAfterEnv": ["@jest/expect"],
+    "setupFilesAfterEnv": [
+      "@jest/expect"
+    ],
     "moduleDirectories": [
       "node_modules",
       "src"
