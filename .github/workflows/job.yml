@@ -9,7 +9,27 @@ on:
   workflow_dispatch:
 
 jobs:
+  run_tests:
+    name: Run Jest Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm install
+        
+      - name: Run tests
+        run: npm test
+  
   scrape_and_record:
+    needs: run_tests
     runs-on: ubuntu-latest
     outputs:
       remainingData: ${{ steps.run_scraper.outputs.remainingData }}
@@ -94,3 +114,37 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./docs
           force_orphan: true
+
+  commit_and_push:
+    needs: update_graph
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          ref: main
+          
+      - name: Configure Git
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+          
+      - name: Check for changes
+        id: check_changes
+        run: |
+          git status --porcelain
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "hasChanges=true" >> $GITHUB_OUTPUT
+          else
+            echo "hasChanges=false" >> $GITHUB_OUTPUT
+          fi
+          
+      - name: Commit and push changes
+        if: steps.check_changes.outputs.hasChanges == 'true'
+        run: |
+          git add .
+          git commit -m "Auto update data [skip ci]"
+          git push origin main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
