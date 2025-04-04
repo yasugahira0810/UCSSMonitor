@@ -303,18 +303,18 @@ function generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, ti
             border-radius: 3px;
             z-index: 2;
         }
-        input[type="range"] {
+        input[type="range"].dual-slider {
+            position: absolute;
             -webkit-appearance: none;
             appearance: none;
-            position: absolute;
             width: 100%;
             background: transparent;
             top: 0;
             height: 40px;
             margin: 0;
-            z-index: 3;
+            pointer-events: none; /* デフォルトではイベントを無効に */
         }
-        input[type="range"]::-webkit-slider-thumb {
+        input[type="range"].dual-slider::-webkit-slider-thumb {
             -webkit-appearance: none;
             appearance: none;
             width: 18px;
@@ -322,13 +322,15 @@ function generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, ti
             border-radius: 50%;
             cursor: pointer;
             margin-top: -7px;
+            pointer-events: auto; /* つまみのイベントのみ有効に */
             z-index: 5;
         }
-        input[type="range"]::-moz-range-thumb {
+        input[type="range"].dual-slider::-moz-range-thumb {
             width: 18px;
             height: 18px;
             border-radius: 50%;
             cursor: pointer;
+            pointer-events: auto; /* つまみのイベントのみ有効に */
             z-index: 5;
             border: none;
         }
@@ -447,8 +449,8 @@ function generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, ti
                 <div class="dual-slider-container">
                     <div class="range-track"></div>
                     <div id="range-selected" class="range-selected"></div>
-                    <input type="range" id="y-min-range" min="0" max="${CONSTANTS.Y_AXIS.MAX_LIMIT}" step="5" value="${yAxisMin}">
-                    <input type="range" id="y-max-range" min="0" max="${CONSTANTS.Y_AXIS.MAX_LIMIT}" step="5" value="${yAxisMax}">
+                    <input type="range" id="y-min-range" class="dual-slider" min="0" max="${CONSTANTS.Y_AXIS.MAX_LIMIT}" step="5" value="${yAxisMin}">
+                    <input type="range" id="y-max-range" class="dual-slider" min="0" max="${CONSTANTS.Y_AXIS.MAX_LIMIT}" step="5" value="${yAxisMax}">
                 </div>
                 <div class="range-values">
                     <span>0</span>
@@ -641,11 +643,12 @@ function generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, ti
                 if (minValue < 0) minValue = 0;
                 if (minValue > Y_AXIS_MAX_LIMIT) minValue = Y_AXIS_MAX_LIMIT;
                 
-                if (minValue > maxValue) {
+                // 最小値が最大値を超えないようにする
+                if (minValue >= maxValue) {
                     minValue = maxValue;
-                    this.value = minValue;
                 }
                 
+                this.value = minValue;
                 chartSettings.yMin = minValue;
                 
                 // 数値入力フィールドも更新
@@ -662,11 +665,19 @@ function generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, ti
                 if (maxValue < 0) maxValue = 0;
                 if (maxValue > Y_AXIS_MAX_LIMIT) maxValue = Y_AXIS_MAX_LIMIT;
                 
-                if (maxValue < minValue) {
-                    maxValue = minValue;
-                    this.value = maxValue;
+                // 最大値が最小値を下回らないようにする
+                if (maxValue <= minValue) {
+                    maxValue = minValue + 5; // 最小でも5の差をつける
+                    if (maxValue > Y_AXIS_MAX_LIMIT) {
+                        maxValue = Y_AXIS_MAX_LIMIT;
+                        // 最大値が上限に達した場合は最小値を調整
+                        yMinRange.value = maxValue - 5;
+                        yMinInput.value = maxValue - 5;
+                        chartSettings.yMin = maxValue - 5;
+                    }
                 }
                 
+                this.value = maxValue;
                 chartSettings.yMax = maxValue;
                 
                 // 数値入力フィールドも更新
@@ -686,7 +697,8 @@ function generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, ti
                 if (minValue < 0) minValue = 0;
                 if (minValue > Y_AXIS_MAX_LIMIT) minValue = Y_AXIS_MAX_LIMIT;
                 
-                if (minValue > maxValue) {
+                // 最小値が最大値を超えないようにする
+                if (minValue >= maxValue) {
                     minValue = maxValue;
                 }
                 
@@ -710,8 +722,12 @@ function generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, ti
                 if (maxValue < 0) maxValue = 0;
                 if (maxValue > Y_AXIS_MAX_LIMIT) maxValue = Y_AXIS_MAX_LIMIT;
                 
-                if (maxValue < minValue) {
-                    maxValue = minValue;
+                // 最大値が最小値を下回らないようにする
+                if (maxValue <= minValue) {
+                    maxValue = minValue + 5; // 最小でも5の差をつける
+                    if (maxValue > Y_AXIS_MAX_LIMIT) {
+                        maxValue = Y_AXIS_MAX_LIMIT;
+                    }
                 }
                 
                 this.value = maxValue;
