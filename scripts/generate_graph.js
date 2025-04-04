@@ -21,6 +21,11 @@ import { Octokit } from '@octokit/rest';
     });
     console.log('Gist data fetched successfully:', gistData);
 
+    // Check if data.json exists in the fetched Gist
+    if (!gistData.files || !gistData.files['data.json']) {
+      throw new Error('data.json file is missing in the Gist.');
+    }
+
     const dataContent = JSON.parse(gistData.files['data.json'].content);
     const labels = dataContent.map(item => item.label);
     const values = dataContent.map(item => item.value);
