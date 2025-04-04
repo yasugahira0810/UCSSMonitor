@@ -316,6 +316,17 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
         button:hover {
             background-color: #45a049;
         }
+        .datetime-controls {
+            display: flex;
+            justify-content: space-between;
+        }
+        .datetime-control-item {
+            flex: 1;
+            margin-right: 10px;
+        }
+        .datetime-control-item:last-child {
+            margin-right: 0;
+        }
     </style>
 </head>
 <body>
@@ -359,13 +370,15 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
         
         <div class="control-group">
             <h3>横軸の設定</h3>
-            <div class="control-item">
-                <label for="x-min">開始日時 (${timezoneDisplay})</label>
-                <input type="datetime-local" id="x-min" value="${firstDateFormatted}" min="${firstDateFormatted}" max="${currentDateFormatted}">
-            </div>
-            <div class="control-item">
-                <label for="x-max">終了日時 (${timezoneDisplay})</label>
-                <input type="datetime-local" id="x-max" value="${currentDateFormatted}" min="${firstDateFormatted}" max="${currentDateFormatted}">
+            <div class="datetime-controls">
+                <div class="datetime-control-item">
+                    <label for="x-min">開始日時 (${timezoneDisplay})</label>
+                    <input type="datetime-local" id="x-min" value="${firstDateFormatted}" min="${firstDateFormatted}" max="${currentDateFormatted}">
+                </div>
+                <div class="datetime-control-item">
+                    <label for="x-max">終了日時 (${timezoneDisplay})</label>
+                    <input type="datetime-local" id="x-max" value="${currentDateFormatted}" min="${firstDateFormatted}" max="${currentDateFormatted}">
+                </div>
             </div>
             <div class="control-item">
                 <button id="apply-settings">設定を適用</button>
@@ -473,7 +486,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
                             },
                             title: {
                                 display: true,
-                                text: `日時 (${timezoneDisplay})`
+                                text: `Date/Time (${timezoneDisplay})`
                             },
                             ticks: {
                                 maxRotation: 45,
