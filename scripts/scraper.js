@@ -1,5 +1,9 @@
 import puppeteer from 'puppeteer';
 import fs from 'fs';
+import dotenv from 'dotenv';
+
+// .envファイルから環境変数を読み込む
+dotenv.config();
 
 // Constants
 const SELECTORS = {

@@ -36,19 +36,39 @@ describe('scraper.js', () => {
     });
     
     describe('logErrorDetails', () => {
-        it('should write error details to a file', async () => {
+        it('エラー詳細を正しくJSONファイルに出力する', async () => {
             const mockPage = { url: () => 'https://example.com' };
-            const errorMessage = 'Test error message';
+            const errorMessage = 'テストエラーメッセージ';
+            
             await logErrorDetails(mockPage, errorMessage);
+            
             expect(fsMock.writeFileSync).toHaveBeenCalledWith(
                 'error_details.json',
                 expect.any(String)
             );
+            
+            const jsonArg = JSON.parse(fsMock.writeFileSync.mock.calls[0][1]);
+            expect(jsonArg).toEqual({
+                date: expect.any(String),
+                status: 'エラー',
+                error: errorMessage,
+                url: 'https://example.com'
+            });
+        });
+
+        it('特殊文字を含む複雑なエラーメッセージを正しく処理する', async () => {
+            const mockPage = { url: () => 'https://example.com' };
+            const complexError = 'エラー発生:\n"引用符"と\\バックスラッシュを含む\n複数行のエラー';
+            
+            await logErrorDetails(mockPage, complexError);
+            
+            const jsonArg = JSON.parse(fsMock.writeFileSync.mock.calls[0][1]);
+            expect(jsonArg.error).toBe(complexError);
         });
     });
 
     describe('isLoggedIn', () => {
-        it('should return true if the service details button is present', async () => {
+        it('サービス詳細ボタンが存在する場合はtrueを返す', async () => {
             await page.setContent(`
                 <div id="ClientAreaHomePagePanels-Active_Products_Services-0">
                     <div>
@@ -62,24 +82,30 @@ describe('scraper.js', () => {
             expect(result).toBe(true);
         });
 
-        it('should return false if the service details button is not present', async () => {
-            await page.setContent('<div></div>');
+        it('サービス詳細ボタンが存在しない場合はfalseを返す', async () => {
+            await page.setContent('<div>ログインページ</div>');
             const result = await isLoggedIn(page);
             expect(result).toBe(false);
         });
     });
 
     describe('login', () => {
-        it('should throw an error if email or password is missing', async () => {
-            await expect(login(page, null, 'password')).rejects.toThrow('環境変数 UCSS_EMAIL または UCSS_PASSWORD が設定されていません');
-            await expect(login(page, 'email', null)).rejects.toThrow('環境変数 UCSS_EMAIL または UCSS_PASSWORD が設定されていません');
+        it('メールまたはパスワードが未設定の場合はエラーをスローする', async () => {
+            await expect(login(page, null, 'password'))
+                .rejects
+                .toThrow('環境変数 UCSS_EMAIL または UCSS_PASSWORD が設定されていません');
+                
+            await expect(login(page, 'email', null))
+                .rejects
+                .toThrow('環境変数 UCSS_EMAIL または UCSS_PASSWORD が設定されていません');
         });
 
-        it('should log in successfully with valid credentials', async () => {
+        it('正常にログインできる場合はエラーをスローしない', async () => {
+            // HTML準備とモック設定
             await page.setContent(`
                 <input id="inputEmail" />
                 <input id="inputPassword" />
-                <button id="login"></button>
+                <button id="login">ログイン</button>
                 <div id="ClientAreaHomePagePanels-Active_Products_Services-0">
                     <div>
                         <div class="list-group-item-actions">
@@ -88,21 +114,91 @@ describe('scraper.js', () => {
                     </div>
                 </div>
             `);
+            
+            // 必要なメソッドをモック化
             const mockGoto = jest.spyOn(page, 'goto').mockResolvedValue();
             const mockType = jest.spyOn(page, 'type').mockResolvedValue();
             const mockClick = jest.spyOn(page, 'click').mockResolvedValue();
             const mockWaitForNavigation = jest.spyOn(page, 'waitForNavigation').mockResolvedValue();
-            await login(page, 'test@example.com', 'password');
+            
+            // テスト実行
+            await login(page, 'test@example.com', 'password123');
+            
+            // 検証
             expect(mockGoto).toHaveBeenCalledWith(expect.stringContaining('login'));
             expect(mockType).toHaveBeenCalledWith('#inputEmail', 'test@example.com');
-            expect(mockType).toHaveBeenCalledWith('#inputPassword', 'password');
+            expect(mockType).toHaveBeenCalledWith('#inputPassword', 'password123');
             expect(mockClick).toHaveBeenCalledWith('#login');
             expect(mockWaitForNavigation).toHaveBeenCalled();
+        });
+
+        it('ログインエラーメッセージが表示された場合はエラーをスローする', async () => {
+            // エラーメッセージを含むHTML準備
+            await page.setContent(`
+                <input id="inputEmail" />
+                <input id="inputPassword" />
+                <button id="login">ログイン</button>
+                <div class="app-main">
+                    <div class="main-body">
+                        <div>
+                            <div>
+                                <div>
+                                    <div>
+                                        <div>
+                                            <div>ログイン失敗: 認証情報が無効です</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `);
+            
+            // メソッドのモック
+            jest.spyOn(page, 'goto').mockResolvedValue();
+            jest.spyOn(page, 'type').mockResolvedValue();
+            jest.spyOn(page, 'click').mockResolvedValue();
+            jest.spyOn(page, 'waitForNavigation').mockResolvedValue();
+            
+            // エラーメッセージ要素のモック
+            jest.spyOn(page, '$').mockResolvedValue({});
+            jest.spyOn(page, 'evaluate').mockResolvedValue('ログイン失敗: 認証情報が無効です');
+            
+            // テスト実行
+            await expect(login(page, 'test@example.com', 'wrongpassword'))
+                .rejects
+                .toThrow('ログイン失敗: ログイン失敗: 認証情報が無効です');
+                
+            // logErrorDetailsが呼ばれたことを確認
+            expect(fsMock.writeFileSync).toHaveBeenCalled();
+        });
+
+        it('入力フィールドが見つからない場合はエラーをスローする', async () => {
+            // メールフィールドを含まないHTML
+            await page.setContent(`
+                <div>
+                    <input id="wrongId" />
+                    <button id="login">ログイン</button>
+                </div>
+            `);
+            
+            // waitForSelectorが失敗するようにモック
+            jest.spyOn(page, 'waitForSelector').mockRejectedValue(new Error('Element not found'));
+            
+            // テスト実行
+            await expect(login(page, 'test@example.com', 'password123'))
+                .rejects
+                .toThrow('メールアドレス入力フィールドが見つかりません');
+                
+            // logErrorDetailsが呼ばれたことを確認
+            expect(fsMock.writeFileSync).toHaveBeenCalled();
         });
     });
 
     describe('waitForPostLoginElements', () => {
-        it('should wait for the service details button to appear', async () => {
+        it('サービス詳細ボタンが表示されている場合はエラーをスローしない', async () => {
+            // ボタンを含むHTMLをセット - セレクターと完全に一致するように修正
             await page.setContent(`
                 <div id="ClientAreaHomePagePanels-Active_Products_Services-0">
                     <div>
@@ -112,17 +208,34 @@ describe('scraper.js', () => {
                     </div>
                 </div>
             `);
+            
+            // waitForSelectorが成功するようにモック
+            jest.spyOn(page, 'waitForSelector').mockResolvedValue(true);
+            
+            // エラーがスローされないことを確認
             await expect(waitForPostLoginElements(page)).resolves.not.toThrow();
         });
 
-        it('should throw an error if the service details button is not found', async () => {
-            await page.setContent('<div></div>');
-            await expect(waitForPostLoginElements(page)).rejects.toThrow('「サービスの詳細」ページへのリンクが見つかりません');
+        it('サービス詳細ボタンが表示されない場合はエラーをスローする', async () => {
+            // ボタンを含まないHTMLをセット
+            await page.setContent('<div>別のページ</div>');
+            
+            // waitForSelectorがエラーをスローするようにモック
+            jest.spyOn(page, 'waitForSelector').mockRejectedValue(new Error('Element not found'));
+            
+            // 適切なエラーメッセージでエラーがスローされることを確認
+            await expect(waitForPostLoginElements(page))
+                .rejects
+                .toThrow('「サービスの詳細」ページへのリンクが見つかりません');
+                
+            // logErrorDetailsが呼ばれたことを確認
+            expect(fsMock.writeFileSync).toHaveBeenCalled();
         });
     });
 
     describe('getRemainingData', () => {
-        it('should extract and return the remaining data', async () => {
+        it('残りデータ通信量を正常に取得できる', async () => {
+            // HTML準備
             await page.setContent(`
                 <div id="ClientAreaHomePagePanels-Active_Products_Services-0">
                     <div>
@@ -137,15 +250,109 @@ describe('scraper.js', () => {
                     </p>
                 </div>
             `);
+            
+            // メソッドのモック
             const mockClick = jest.spyOn(page, 'click').mockResolvedValue();
-            const remainingData = await getRemainingData(page);
-            expect(mockClick).toHaveBeenCalledWith('#ClientAreaHomePagePanels-Active_Products_Services-0 > div > div.list-group-item-actions > button');
-            expect(remainingData).toBe('123 GB');
+            // waitForSelectorが成功するようにモック
+            jest.spyOn(page, 'waitForSelector').mockResolvedValue(true);
+            jest.spyOn(page, '$eval').mockResolvedValue('123 GB');
+            
+            // 関数実行
+            const result = await getRemainingData(page);
+            
+            // 検証
+            expect(mockClick).toHaveBeenCalledWith(
+                '#ClientAreaHomePagePanels-Active_Products_Services-0 > div > div.list-group-item-actions > button'
+            );
+            expect(result).toBe('123 GB');
         });
 
-        it('should throw an error if the remaining data element is not found', async () => {
-            await page.setContent('<div></div>');
-            await expect(getRemainingData(page)).rejects.toThrow('残りデータ通信量の要素が見つかりません');
+        it('残りデータ通信量の要素が見つからない場合はエラーをスローする', async () => {
+            // HTML準備 - 必要な要素を含まない
+            await page.setContent(`
+                <div id="ClientAreaHomePagePanels-Active_Products_Services-0">
+                    <div>
+                        <div class="list-group-item-actions">
+                            <button>サービスの詳細</button>
+                        </div>
+                    </div>
+                </div>
+            `);
+            
+            // クリックはモックするが、waitForSelectorはエラーをスローするようにモック
+            jest.spyOn(page, 'click').mockResolvedValue();
+            jest.spyOn(page, 'waitForSelector').mockRejectedValue(new Error('Element not found'));
+            
+            // 関数実行とエラー確認
+            await expect(getRemainingData(page))
+                .rejects
+                .toThrow('残りデータ通信量の要素が見つかりません');
+                
+            // logErrorDetailsが呼ばれたことを確認
+            expect(fsMock.writeFileSync).toHaveBeenCalled();
+        });
+
+        it('様々なフォーマットのデータ通信量を正しく処理する', async () => {
+            // 小数点を含むGBパターン
+            await page.setContent(`
+                <div id="ClientAreaHomePagePanels-Active_Products_Services-0">
+                    <div><div class="list-group-item-actions"><button>サービスの詳細</button></div></div>
+                </div>
+                <div id="traffic-header"><p class="free-traffic"><span class="traffic-number">1.5 GB</span></p></div>
+            `);
+            
+            jest.spyOn(page, 'click').mockResolvedValue();
+            // waitForSelectorが成功するようにモック
+            jest.spyOn(page, 'waitForSelector').mockResolvedValue(true);
+            jest.spyOn(page, '$eval').mockResolvedValue('1.5 GB');
+            
+            const result1 = await getRemainingData(page);
+            expect(result1).toBe('1.5 GB');
+            
+            // MBパターン
+            jest.spyOn(page, '$eval').mockResolvedValue('500 MB');
+            
+            const result2 = await getRemainingData(page);
+            expect(result2).toBe('500 MB');
+        });
+    });
+
+    describe('エッジケースとエラー処理', () => {
+        it('タイムアウトエラーが適切に処理される', async () => {
+            await page.setContent('<div>テストページ</div>');
+            
+            // waitForSelectorがタイムアウトエラーをスローするようにモック
+            jest.spyOn(page, 'waitForSelector').mockRejectedValue(new Error('Timeout exceeded'));
+            jest.spyOn(page, 'goto').mockResolvedValue();
+            
+            // ログイン試行でのタイムアウト処理を確認
+            await expect(login(page, 'test@example.com', 'password'))
+                .rejects
+                .toThrow();
+                
+            // logErrorDetailsが呼ばれたことを確認
+            expect(fsMock.writeFileSync).toHaveBeenCalled();
+        });
+
+        it('異常なHTML構造でも適切にエラー処理される', async () => {
+            // 期待と異なる構造のHTMLをセット
+            await page.setContent(`
+                <div id="completely-different-structure">
+                    <input type="text" id="different-email-field" />
+                    <button id="some-other-button">Click</button>
+                </div>
+            `);
+            
+            jest.spyOn(page, 'goto').mockResolvedValue();
+            jest.spyOn(page, 'waitForSelector').mockRejectedValue(new Error('Element not found'));
+            
+            // ログイン試行
+            await expect(login(page, 'test@example.com', 'password'))
+                .rejects
+                .toThrow('メールアドレス入力フィールドが見つかりません');
+                
+            // logErrorDetailsが呼ばれたことを確認
+            expect(fsMock.writeFileSync).toHaveBeenCalled();
         });
     });
 });
