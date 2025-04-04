@@ -199,7 +199,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
     
     <script>
         const ctx = document.getElementById('myChart').getContext('2d');
-        const yAxisMax = ${yAxisMax}; // yAxisMax変数をHTML側のJavaScriptでも定義
+        // yAxisMaxを直接数値として挿入
         new Chart(ctx, {
             type: 'line',
             data: {
@@ -243,7 +243,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
                 scales: {
                     y: {
                         beginAtZero: true,
-                        max: yAxisMax,
+                        max: ${yAxisMax}, // 直接数値として yAxisMax を挿入
                         title: {
                             display: true,
                             text: '残りデータ量 (GB)'
