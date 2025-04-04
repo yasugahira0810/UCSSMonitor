@@ -56,6 +56,17 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
     const minValue = Math.min(...values);
     const averageValue = values.reduce((sum, val) => sum + val, 0) / values.length;
 
+    // Determine the max value for Y-axis based on the rule
+    let yAxisMax;
+    if (maxValue < 50) {
+      yAxisMax = 50;
+    } else if (maxValue < 100) {
+      yAxisMax = 100;
+    } else {
+      // For values >= 100GB, round up to nearest 50
+      yAxisMax = Math.ceil(maxValue / 50) * 50;
+    }
+
     const htmlContent = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -182,7 +193,8 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
                 },
                 scales: {
                     y: {
-                        beginAtZero: false,
+                        beginAtZero: true,
+                        max: yAxisMax,
                         title: {
                             display: true,
                             text: '残りデータ量 (GB)'
