@@ -81,7 +81,7 @@ jobs:
         run: npm run generate-graph
 
       - name: Upload index.html artifact
-        uses: actions/upload-artifact@v3.1.0
+        uses: actions/upload-artifact@v4.6.2
         with:
           name: index-html
           path: docs/index.html
