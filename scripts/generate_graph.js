@@ -786,7 +786,20 @@ function generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, ti
         
         // DOMロード時の初期化
         document.addEventListener('DOMContentLoaded', function() {
+            // 初期値を確実に設定
+            const yMinRange = document.getElementById('y-min-range');
+            const yMaxRange = document.getElementById('y-max-range');
+            const yMinInput = document.getElementById('y-min-input');
+            const yMaxInput = document.getElementById('y-max-input');
+            
+            // 初期値を明示的に設定
+            yMinRange.value = chartSettings.yMin;
+            yMaxRange.value = chartSettings.yMax;
+            yMinInput.value = chartSettings.yMin;
+            yMaxInput.value = chartSettings.yMax;
+            
             setupEventListeners();
+            updateSelectedRange(); // 初期スライダー範囲を設定
             initChart(chartSettings);
         });
     </script>
