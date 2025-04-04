@@ -33,8 +33,23 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
       fs.appendFileSync(process.env.GITHUB_OUTPUT, `remainingData=${remainingValue}\n`);
     }
 
-    // Sort data by date to ensure chronological order
-    dataContent.sort((a, b) => new Date(a.date) - new Date(b.date));
+    // フィルタリングされたデータを用意
+    // 1時間ごとにデータポイントをフィルタリング
+    const filteredData = [];
+    let lastHour = null;
+    
+    dataContent.forEach(item => {
+      const date = new Date(item.date);
+      const currentHour = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}-${date.getHours()}`;
+      
+      // 新しい時間またはデータの先頭の場合
+      if (currentHour !== lastHour) {
+        filteredData.push(item);
+        lastHour = currentHour;
+      }
+    });
+    
+    console.log(`Filtered to ${filteredData.length} data points (approx. hourly)`);
 
     // 環境変数からUTCオフセットを取得
     let timezone = 'UTC';
@@ -86,8 +101,15 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
       });
     };
 
-    const labels = dataContent.map(item => formatDate(item.date));
-    const values = dataContent.map(item => parseFloat(item.remainingData));
+    // 時間スケール用のデータ準備
+    const chartData = filteredData.map(item => ({
+      x: new Date(item.date).getTime(), // タイムスタンプを使用
+      y: parseFloat(item.remainingData)
+    }));
+    
+    // 表示用ラベルは依然として必要
+    const labels = filteredData.map(item => formatDate(item.date));
+    const values = filteredData.map(item => parseFloat(item.remainingData));
 
     // Calculate statistics
     const latestValue = values[values.length - 1];
@@ -113,6 +135,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>UCSS Monitor Chart</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -191,7 +214,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
     
     <div class="updated-time">
         最終更新: ${new Date().toLocaleString('ja-JP', { timeZone: timezone })}
-        (データポイント数: ${dataContent.length})
+        (データポイント数: ${filteredData.length})
     </div>
     <div class="timezone-info">
         タイムゾーン: ${timezoneDisplay}
@@ -199,15 +222,14 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
     
     <script>
         const ctx = document.getElementById('myChart').getContext('2d');
-        // yAxisMaxを直接数値として挿入
+        
         new Chart(ctx, {
             type: 'line',
             data: {
-                labels: ${JSON.stringify(labels)},
                 datasets: [
                     {
                         label: '残りデータ量 (GB)',
-                        data: ${JSON.stringify(values)},
+                        data: ${JSON.stringify(chartData)},
                         borderColor: 'rgba(75, 192, 192, 1)',
                         backgroundColor: 'rgba(75, 192, 192, 0.2)',
                         borderWidth: 2,
@@ -236,6 +258,17 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
                         callbacks: {
                             label: function(context) {
                                 return "Remaining data: " + context.parsed.y.toFixed(2) + " GB";
+                            },
+                            title: function(tooltipItems) {
+                                const date = new Date(tooltipItems[0].parsed.x);
+                                return date.toLocaleString('ja-JP', {
+                                    year: 'numeric',
+                                    month: 'numeric',
+                                    day: 'numeric',
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                    timeZone: '${timezone}'
+                                });
                             }
                         }
                     }
@@ -243,7 +276,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
                 scales: {
                     y: {
                         beginAtZero: true,
-                        max: ${yAxisMax}, // 直接数値として yAxisMax を挿入
+                        max: ${yAxisMax},
                         title: {
                             display: true,
                             text: '残りデータ量 (GB)'
@@ -255,9 +288,21 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
                         }
                     },
                     x: {
+                        type: 'time',
+                        time: {
+                            unit: 'hour',
+                            displayFormats: {
+                                hour: 'MM/dd HH:mm'
+                            },
+                            tooltipFormat: 'yyyy/MM/dd HH:mm'
+                        },
                         title: {
                             display: true,
                             text: '日時'
+                        },
+                        ticks: {
+                            maxRotation: 45,
+                            minRotation: 45
                         }
                     }
                 }
@@ -271,7 +316,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
     fs.mkdirSync('./docs', { recursive: true });
     fs.writeFileSync(outputPath, htmlContent);
     console.log('Chart HTML generated successfully at:', outputPath);
-    console.log(`Generated chart with ${labels.length} data points`);
+    console.log(`Generated chart with ${chartData.length} data points`);
 
   } catch (error) {
     console.error('Error occurred:', error.message);
