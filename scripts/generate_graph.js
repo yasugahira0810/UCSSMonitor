@@ -13,7 +13,6 @@ const CONSTANTS = {
   Y_AXIS: {
     DEFAULT_MIN: 0,
     DEFAULT_MAX: 50,
-    MIN_LIMIT: 0, // 追加：Y軸の最小値の下限
     MAX_LIMIT: 500,
     THRESHOLDS: [50, 100]
   }
@@ -450,21 +449,21 @@ function generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, ti
                 <div class="dual-slider-container">
                     <div class="range-track"></div>
                     <div id="range-selected" class="range-selected"></div>
-                    <input type="range" id="y-min-range" class="dual-slider" min="${CONSTANTS.Y_AXIS.MIN_LIMIT}" max="${CONSTANTS.Y_AXIS.MAX_LIMIT}" step="5" value="${yAxisMin}">
-                    <input type="range" id="y-max-range" class="dual-slider" min="${CONSTANTS.Y_AXIS.MIN_LIMIT}" max="${CONSTANTS.Y_AXIS.MAX_LIMIT}" step="5" value="${yAxisMax}">
+                    <input type="range" id="y-min-range" class="dual-slider" min="0" max="${CONSTANTS.Y_AXIS.MAX_LIMIT}" step="5" value="${yAxisMin}">
+                    <input type="range" id="y-max-range" class="dual-slider" min="0" max="${CONSTANTS.Y_AXIS.MAX_LIMIT}" step="5" value="${yAxisMax}">
                 </div>
                 <div class="range-values">
-                    <span>${CONSTANTS.Y_AXIS.MIN_LIMIT}</span>
+                    <span>0</span>
                     <span>${CONSTANTS.Y_AXIS.MAX_LIMIT}</span>
                 </div>
                 <div class="y-axis-inputs">
                     <div class="y-axis-input-group">
                         <label for="y-min-input">最小値:</label>
-                        <input type="number" id="y-min-input" min="${CONSTANTS.Y_AXIS.MIN_LIMIT}" max="${CONSTANTS.Y_AXIS.MAX_LIMIT}" step="5" value="${yAxisMin}">
+                        <input type="number" id="y-min-input" min="0" max="${CONSTANTS.Y_AXIS.MAX_LIMIT}" step="5" value="${yAxisMin}">
                     </div>
                     <div class="y-axis-input-group">
                         <label for="y-max-input">最大値:</label>
-                        <input type="number" id="y-max-input" min="${CONSTANTS.Y_AXIS.MIN_LIMIT}" max="${CONSTANTS.Y_AXIS.MAX_LIMIT}" step="5" value="${yAxisMax}">
+                        <input type="number" id="y-max-input" min="0" max="${CONSTANTS.Y_AXIS.MAX_LIMIT}" step="5" value="${yAxisMax}">
                     </div>
                 </div>
             </div>
@@ -510,7 +509,6 @@ function generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, ti
             xMax: currentTimestamp  // 初期値を現在の時刻に設定
         };
         // 定数値
-        const Y_AXIS_MIN_LIMIT = ${CONSTANTS.Y_AXIS.MIN_LIMIT};
         const Y_AXIS_MAX_LIMIT = ${CONSTANTS.Y_AXIS.MAX_LIMIT};
         const Y_AXIS_DEFAULT_MIN = ${CONSTANTS.Y_AXIS.DEFAULT_MIN};
         const Y_AXIS_DEFAULT_MAX = ${CONSTANTS.Y_AXIS.DEFAULT_MAX};
@@ -642,12 +640,12 @@ function generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, ti
                 const maxValue = parseInt(yMaxRange.value);
                 
                 // 最小値と最大値の制約
-                if (minValue < Y_AXIS_MIN_LIMIT) minValue = Y_AXIS_MIN_LIMIT;
+                if (minValue < 0) minValue = 0;
                 if (minValue > Y_AXIS_MAX_LIMIT) minValue = Y_AXIS_MAX_LIMIT;
                 
                 // 最小値が最大値を超えないようにする
                 if (minValue >= maxValue) {
-                    minValue = maxValue - 5; // 最小でも5の差をつける
+                    minValue = maxValue;
                 }
                 
                 this.value = minValue;
@@ -664,12 +662,19 @@ function generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, ti
                 const minValue = parseInt(yMinRange.value);
                 
                 // 最小値と最大値の制約
-                if (maxValue < Y_AXIS_MIN_LIMIT) maxValue = Y_AXIS_MIN_LIMIT;
+                if (maxValue < 0) maxValue = 0;
                 if (maxValue > Y_AXIS_MAX_LIMIT) maxValue = Y_AXIS_MAX_LIMIT;
                 
                 // 最大値が最小値を下回らないようにする
                 if (maxValue <= minValue) {
                     maxValue = minValue + 5; // 最小でも5の差をつける
+                    if (maxValue > Y_AXIS_MAX_LIMIT) {
+                        maxValue = Y_AXIS_MAX_LIMIT;
+                        // 最大値が上限に達した場合は最小値を調整
+                        yMinRange.value = maxValue - 5;
+                        yMinInput.value = maxValue - 5;
+                        chartSettings.yMin = maxValue - 5;
+                    }
                 }
                 
                 this.value = maxValue;
@@ -689,12 +694,12 @@ function generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, ti
                 if (isNaN(minValue)) return;
                 
                 // 最小値と最大値の制約
-                if (minValue < Y_AXIS_MIN_LIMIT) minValue = Y_AXIS_MIN_LIMIT;
+                if (minValue < 0) minValue = 0;
                 if (minValue > Y_AXIS_MAX_LIMIT) minValue = Y_AXIS_MAX_LIMIT;
                 
                 // 最小値が最大値を超えないようにする
                 if (minValue >= maxValue) {
-                    minValue = maxValue - 5; // 最小でも5の差をつける
+                    minValue = maxValue;
                 }
                 
                 this.value = minValue;
@@ -714,12 +719,15 @@ function generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, ti
                 if (isNaN(maxValue)) return;
                 
                 // 最小値と最大値の制約
-                if (maxValue < Y_AXIS_MIN_LIMIT) maxValue = Y_AXIS_MIN_LIMIT;
+                if (maxValue < 0) maxValue = 0;
                 if (maxValue > Y_AXIS_MAX_LIMIT) maxValue = Y_AXIS_MAX_LIMIT;
                 
                 // 最大値が最小値を下回らないようにする
                 if (maxValue <= minValue) {
                     maxValue = minValue + 5; // 最小でも5の差をつける
+                    if (maxValue > Y_AXIS_MAX_LIMIT) {
+                        maxValue = Y_AXIS_MAX_LIMIT;
+                    }
                 }
                 
                 this.value = maxValue;
