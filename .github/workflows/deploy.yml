@@ -2,12 +2,13 @@ name: Deploy GitHub Pages
 
 on:
   workflow_run:
-    workflows: ["UCSSMonitor Job"]  # GitHub Actions1が完了したら実行
+    workflows: ["UCSSMonitor Job"]
     types:
       - completed
 
 jobs:
   deploy:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
