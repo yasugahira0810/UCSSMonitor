@@ -8,7 +8,7 @@
     "start": "vue-cli-service serve",
     "build": "vue-cli-service build",
     "generate-graph": "node scripts/generate_graph.js",
-    "test": "jest",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
     "deploy": "vue-cli-service build && git subtree push --prefix public origin gh-pages"
   },
   "dependencies": {
@@ -34,6 +34,11 @@
       "node_modules",
       "src"
     ],
-    "setupFilesAfterEnv": ["@jest/expect"]
+    "setupFilesAfterEnv": ["@jest/expect"],
+    "transform": {},
+    "extensionsToTreatAsEsm": [".js"],
+    "moduleNameMapper": {
+      "^(\\.{1,2}/.*)\\.js$": "$1"
+    }
   }
 }

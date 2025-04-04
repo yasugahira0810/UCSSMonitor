@@ -26,7 +26,7 @@ jobs:
         run: npm install
         
       - name: Run tests
-        run: npm test
+        run: node --experimental-vm-modules node_modules/jest/bin/jest.js
   
   scrape_and_record:
     needs: run_tests
