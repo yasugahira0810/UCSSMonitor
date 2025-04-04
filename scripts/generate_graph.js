@@ -1,15 +1,12 @@
 import fs from 'fs';
 import Chart from 'chart.js/auto';
 import fetch from 'node-fetch';
-import { Octokit } from '@octokit/rest';
-import path from 'path';
+import { dirname } from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 (async () => {
-  const octokit = new Octokit({ 
-    auth: process.env.GH_PAT, // Use process.env.GH_PAT for authentication
-    request: { fetch } // Pass fetch implementation
-  });
-
   const gistUrl = `https://gist.github.com/${process.env.GIST_USER}/${process.env.GIST_ID}`;
   console.log(`Fetching Gist data from: ${gistUrl}`);
   console.log('GIST_USER:', process.env.GIST_USER);
@@ -17,18 +14,19 @@ import path from 'path';
   console.log('Constructed Gist URL:', gistUrl);
 
   try {
-    const { data: gistData } = await octokit.gists.get({
-      gist_id: process.env.GIST_ID
-    });
-    console.log('Gist data fetched successfully:', gistData);
+    // Fetch raw data from gist
+    const response = await fetch(`${gistUrl}/raw/data.json`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const dataContent = await response.json();
+    console.log('Data content fetched:', dataContent);
 
-    // Check if data.json exists in the fetched Gist
-    if (!gistData.files || !gistData.files['data.json']) {
-      console.warn('Warning: data.json file is missing in the Gist. Using default data.');
-      gistData.files['data.json'] = { content: '[]' };
+    if (!Array.isArray(dataContent)) {
+      throw new Error('Invalid data format: expected an array');
     }
 
-    const dataContent = JSON.parse(gistData.files['data.json'].content);
     const labels = dataContent.map(item => item.date);
     const values = dataContent.map(item => item.remainingData);
 
@@ -37,7 +35,7 @@ import path from 'path';
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chart</title>
+    <title>UCSS Monitor Chart</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
@@ -50,10 +48,13 @@ import path from 'path';
                 labels: ${JSON.stringify(labels)},
                 datasets: [
                     {
-                        label: 'Remaining Data',
+                        label: 'Remaining Data (GB)',
                         data: ${JSON.stringify(values)},
                         borderColor: 'rgba(75, 192, 192, 1)',
-                        borderWidth: 1
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        borderWidth: 2,
+                        tension: 0.1,
+                        fill: true
                     }
                 ]
             },
@@ -63,10 +64,24 @@ import path from 'path';
                     legend: {
                         position: 'top',
                     },
+                    title: {
+                        display: true,
+                        text: 'UCSS Data Usage Monitor'
+                    }
                 },
                 scales: {
                     y: {
-                        beginAtZero: true
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Remaining Data (GB)'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Date'
+                        }
                     }
                 }
             }
@@ -76,11 +91,13 @@ import path from 'path';
 </html>`;
 
     const outputPath = './docs/index.html';
-    fs.mkdirSync('./docs', { recursive: true }); // Ensure the docs directory exists
+    fs.mkdirSync('./docs', { recursive: true });
     fs.writeFileSync(outputPath, htmlContent);
-    console.log('Chart HTML saved to', outputPath);
+    console.log('Chart HTML generated successfully at:', outputPath);
+
   } catch (error) {
-    console.error('Error fetching or processing Gist data:', error);
-    console.error('Stack trace:', error.stack); // Log full error stack for debugging
+    console.error('Error occurred:', error.message);
+    console.error('Stack trace:', error.stack);
+    process.exit(1);
   }
 })();
