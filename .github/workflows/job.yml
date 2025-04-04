@@ -15,44 +15,37 @@ jobs:
       remainingData: ${{ steps.run_scraper.outputs.remainingData }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
-
+        uses: actions/checkout@v3
+        
       - name: Set up Node.js
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v3
         with:
           node-version: '18'
-
-      - name: Cache Node.js modules
-        uses: actions/cache@v3
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-
-
+          cache: 'npm'
+          
       - name: Install dependencies
         run: npm install
-
+        
       - name: Run scraper
         id: run_scraper
         env:
           UCSS_EMAIL: ${{ secrets.UCSS_EMAIL }}
           UCSS_PASSWORD: ${{ secrets.UCSS_PASSWORD }}
         run: |
-          # スクリプトの出力から remaining_data: の後の部分を抽出して変数に格納
+          # Extract the remaining data from the script output
           output=$(node scripts/scraper.js)
           remaining_data=$(echo "$output" | grep "remaining_data:" | sed 's/remaining_data://g')
           
-          # 正しいフォーマットでoutputを設定
+          # Set output in the correct format
           echo "remainingData=${remaining_data}" >> $GITHUB_OUTPUT
-
+          
       - name: Check scraper output
         run: |
           if [ "${{ steps.run_scraper.outputs.remainingData }}" = "" ]; then
             echo "Login might have failed or data not retrieved."
             exit 1
           fi
-
+          
       - name: Update Gist
         env:
           GH_PAT: ${{ secrets.GH_PAT }}
@@ -66,24 +59,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
-
+        uses: actions/checkout@v3
+        
       - name: Set up Node.js
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v3
         with:
           node-version: '18'
-
-      - name: Cache Node.js modules
-        uses: actions/cache@v3
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-
-
+          cache: 'npm'
+          
       - name: Install dependencies
         run: npm install
-
+        
       - name: Generate graph
         env:
           GIST_USER: ${{ secrets.GIST_USER }}
@@ -91,21 +77,17 @@ jobs:
           GH_PAT: ${{ secrets.GH_PAT }}
           UTC_OFFSET: ${{ secrets.UTC_OFFSET }}
         run: npm run generate-graph
-
-      - name: Verify index.html existence
+        
+      - name: Verify build output
         run: |
           if [ ! -f docs/index.html ]; then
-            echo "Error: docs/index.html does not exist.";
-            exit 1;
+            echo "Error: docs/index.html does not exist."
+            exit 1
+          elif ! grep -q '<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>' docs/index.html; then
+            echo "Error: docs/index.html does not contain the expected Chart.js content."
+            exit 1
           fi
-
-      - name: Verify index.html content
-        run: |
-          if ! grep -q '<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>' docs/index.html; then
-            echo "Error: docs/index.html does not contain the expected Chart.js content.";
-            exit 1;
-          fi
-
+          
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:

@@ -398,7 +398,7 @@ function generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, ti
     </style>
 </head>
 <body>
-    <h1>UCSS データ使用量モニター</h1>
+    <h1 style="text-align: center;">UCSS Monitor</h1>
     
     <div class="chart-container">
         <canvas id="myChart"></canvas>
@@ -452,7 +452,6 @@ function generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, ti
     </div>
     
     <div class="buttons-container">
-        <p>縦軸・横軸の両方の設定を反映します</p>
         <button id="apply-settings">設定を適用</button>
         <button id="reset-settings">リセット</button>
     </div>

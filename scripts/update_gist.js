@@ -1,65 +1,39 @@
 import fs from 'fs';
-import fetch from 'node-fetch'; // Import node-fetch
-import { logRemainingData } from './scraper.js';
+import fetch from 'node-fetch';
 import path from 'path';
 
-const remainingData = process.env.REMAINING_DATA;
+const REMAINING_DATA = process.env.REMAINING_DATA;
+const GIST_USER = process.env.GIST_USER;
+const GIST_ID = process.env.GIST_ID;
+const GH_PAT = process.env.GH_PAT;
+const FILENAME = 'data.json';
 
-(async () => {
-  const { Octokit } = await import('@octokit/rest');
-  const octokit = new Octokit({ 
-    auth: process.env.GH_PAT, // Use process.env.GH_PAT for authentication
-    request: { fetch } // Pass fetch implementation
-  });
-
-  // Log the GIST_USER and GIST_ID environment variables
-  console.log(`GIST_USER: ${process.env.GIST_USER}`);
-  console.log(`GIST_ID: ${process.env.GIST_ID}`);
-
-  // Construct the Gist URL using environment variables
-  const gistUrl = `https://gist.github.com/${process.env.GIST_USER}/${process.env.GIST_ID}`;
-  console.log(`Updating Gist at: ${gistUrl}`);
-
+/**
+ * Main function to update the Gist with new data
+ */
+async function updateGist() {
   try {
-    // Fetch existing Gist data
-    const { data: gistData } = await octokit.gists.get({
-      gist_id: process.env.GIST_ID // Use process.env.GIST_ID
+    const { Octokit } = await import('@octokit/rest');
+    const octokit = new Octokit({ 
+      auth: GH_PAT,
+      request: { fetch }
     });
 
-    // Remove dynamic filename and force "data.json"
-    const fileName = 'data.json';
-
-    // Validate Gist data
-    if (!gistData.files || Object.keys(gistData.files).length === 0) {
-      throw new Error('No files found in the Gist. Please check the Gist ID or its content.');
-    }
-
-    // Parse existing data from the Gist
-    let existingData;
-    try {
-      existingData = JSON.parse(gistData.files[fileName]?.content || '[]');
-    } catch (parseError) {
-      throw new Error('Failed to parse Gist content as JSON. Please check the Gist content.');
-    }
-
+    console.log(`Updating Gist at: https://gist.github.com/${GIST_USER}/${GIST_ID}`);
+    
+    // Get existing Gist data
+    const existingData = await fetchGistData(octokit);
+    
+    // Create new entry
     const newEntry = {
       date: new Date().toISOString(),
-      remainingData: parseFloat(remainingData) // Use the value from the environment variable
+      remainingData: parseFloat(REMAINING_DATA)
     };
 
-    // Append new entry to existing data
+    // Update Gist
     const updatedData = [...existingData, newEntry];
-
-    // Update the Gist with the new data
-    await octokit.gists.update({
-      gist_id: process.env.GIST_ID, // Use process.env.GIST_ID
-      files: {
-        [fileName]: {
-          content: JSON.stringify(updatedData, null, 2) // Format JSON with indentation
-        }
-      }
-    });
-
+    await saveGistData(octokit, updatedData);
+    
     console.log('Gist updated successfully with new data:', newEntry);
   } catch (error) {
     console.error('Error updating Gist:', error.message);
@@ -67,9 +41,47 @@ const remainingData = process.env.REMAINING_DATA;
       console.error('Response data:', error.response.data);
     }
   }
-})();
+}
 
-const generateFiles = () => {
+/**
+ * Fetch existing data from the Gist
+ */
+async function fetchGistData(octokit) {
+  const { data: gistData } = await octokit.gists.get({
+    gist_id: GIST_ID
+  });
+
+  // Validate Gist data
+  if (!gistData.files || Object.keys(gistData.files).length === 0) {
+    throw new Error('No files found in the Gist. Please check the Gist ID or its content.');
+  }
+
+  // Parse existing data from the Gist
+  try {
+    return JSON.parse(gistData.files[FILENAME]?.content || '[]');
+  } catch (parseError) {
+    throw new Error('Failed to parse Gist content as JSON. Please check the Gist content.');
+  }
+}
+
+/**
+ * Save updated data to the Gist
+ */
+async function saveGistData(octokit, updatedData) {
+  await octokit.gists.update({
+    gist_id: GIST_ID,
+    files: {
+      [FILENAME]: {
+        content: JSON.stringify(updatedData, null, 2)
+      }
+    }
+  });
+}
+
+/**
+ * Generate HTML files in the docs directory
+ */
+function generateFiles() {
   const targetDir = path.join('docs');
 
   if (!fs.existsSync(targetDir)) {
@@ -133,7 +145,10 @@ const generateFiles = () => {
     fs.writeFileSync(targetFile, file.content);
     console.log(`${file.name} was generated in ${targetDir}`);
   });
-};
+}
 
-// Call the function to generate files
-generateFiles();
+// Execute main functions
+(async () => {
+  await updateGist();
+  generateFiles();
+})();
