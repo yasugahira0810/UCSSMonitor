@@ -1,6 +1,7 @@
 import fs from 'fs';
 import fetch from 'node-fetch';
 import path from 'path';
+import { Octokit } from '@octokit/rest';
 
 const REMAINING_DATA = process.env.REMAINING_DATA;
 const GIST_USER = process.env.GIST_USER;
@@ -13,7 +14,6 @@ const FILENAME = 'data.json';
  */
 async function updateGist() {
   try {
-    const { Octokit } = await import('@octokit/rest');
     const octokit = new Octokit({ 
       auth: GH_PAT,
       request: { fetch }
@@ -47,6 +47,10 @@ async function updateGist() {
  * Fetch existing data from the Gist
  */
 async function fetchGistData(octokit) {
+  if (!GIST_ID) {
+    throw new Error('GIST_ID is not defined in the environment variables.');
+  }
+
   const { data: gistData } = await octokit.gists.get({
     gist_id: GIST_ID
   });
@@ -60,6 +64,7 @@ async function fetchGistData(octokit) {
   try {
     return JSON.parse(gistData.files[FILENAME]?.content || '[]');
   } catch (parseError) {
+    console.error('Error parsing Gist content:', parseError);
     throw new Error('Failed to parse Gist content as JSON. Please check the Gist content.');
   }
 }
