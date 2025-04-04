@@ -80,6 +80,13 @@ jobs:
           GH_PAT: ${{ secrets.GH_PAT }}
         run: npm run generate-graph
 
+      - name: Verify index.html existence
+        run: |
+          if [ ! -f docs/index.html ]; then
+            echo "Error: docs/index.html does not exist.";
+            exit 1;
+          fi
+
       - name: Upload index.html artifact
         uses: actions/upload-artifact@v4.6.2
         with:

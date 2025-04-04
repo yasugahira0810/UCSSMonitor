@@ -17,8 +17,15 @@ jobs:
       - name: Download index.html artifact
         uses: actions/download-artifact@v4.2.1
         with:
-          name: index-html
+          name: index-html  # Ensure this matches the artifact name in the previous job
           path: docs
+
+      - name: Verify index.html exists
+        run: |
+          if [ ! -f docs/index.html ]; then
+            echo "Error: index.html not found in docs directory.";
+            exit 1;
+          fi
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4

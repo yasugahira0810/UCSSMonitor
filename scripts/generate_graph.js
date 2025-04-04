@@ -68,10 +68,12 @@ import { Octokit } from '@octokit/rest';
 </body>
 </html>`;
 
-    const outputPath = './docs/index.html'; // Updated output path to index.html
+    const outputPath = './docs/index.html';
+    fs.mkdirSync('./docs', { recursive: true }); // Ensure the docs directory exists
     fs.writeFileSync(outputPath, htmlContent);
     console.log('Chart HTML saved to', outputPath);
   } catch (error) {
-    console.error('Error fetching or processing Gist data:', error.message);
+    console.error('Error fetching or processing Gist data:', error);
+    console.error('Stack trace:', error.stack); // Log full error stack for debugging
   }
 })();
