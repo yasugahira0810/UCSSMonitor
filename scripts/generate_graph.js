@@ -408,6 +408,20 @@ function generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, ti
             margin-top: 15px;
             width: 100%;
         }
+        .y-axis-inputs {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            align-items: center;
+        }
+        .y-axis-input-group {
+            display: flex;
+            align-items: center;
+        }
+        .y-axis-input-group label {
+            margin-right: 5px;
+            font-weight: normal;
+        }
     </style>
 </head>
 <body>
@@ -429,7 +443,7 @@ function generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, ti
         <div class="control-group">
             <h3>縦軸の設定</h3>
             <div class="control-item">
-                <label for="y-min-range">データ量範囲（最小値：<span id="y-min-value">${yAxisMin}</span> - 最大値：<span id="y-max-value">${yAxisMax}</span>）</label>
+                <label for="y-min-range">データ量範囲</label>
                 <div class="dual-slider-container">
                     <div class="range-track"></div>
                     <div id="range-selected" class="range-selected"></div>
@@ -439,6 +453,16 @@ function generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, ti
                 <div class="range-values">
                     <span>0</span>
                     <span>${CONSTANTS.Y_AXIS.MAX_LIMIT}</span>
+                </div>
+                <div class="y-axis-inputs">
+                    <div class="y-axis-input-group">
+                        <label for="y-min-input">最小値:</label>
+                        <input type="number" id="y-min-input" min="0" max="${CONSTANTS.Y_AXIS.MAX_LIMIT}" step="5" value="${yAxisMin}">
+                    </div>
+                    <div class="y-axis-input-group">
+                        <label for="y-max-input">最大値:</label>
+                        <input type="number" id="y-max-input" min="0" max="${CONSTANTS.Y_AXIS.MAX_LIMIT}" step="5" value="${yAxisMax}">
+                    </div>
                 </div>
             </div>
         </div>
@@ -482,7 +506,6 @@ function generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, ti
             xMin: firstTimestamp,
             xMax: currentTimestamp  // 初期値を現在の時刻に設定
         };
-
         // 定数値
         const Y_AXIS_MAX_LIMIT = ${CONSTANTS.Y_AXIS.MAX_LIMIT};
         const Y_AXIS_DEFAULT_MIN = ${CONSTANTS.Y_AXIS.DEFAULT_MIN};
@@ -604,8 +627,8 @@ function generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, ti
             const xMax = document.getElementById('x-max');
             const yMinRange = document.getElementById('y-min-range');
             const yMaxRange = document.getElementById('y-max-range');
-            const yMinValueDisplay = document.getElementById('y-min-value');
-            const yMaxValueDisplay = document.getElementById('y-max-value');
+            const yMinInput = document.getElementById('y-min-input');
+            const yMaxInput = document.getElementById('y-max-input');
             const applyButton = document.getElementById('apply-settings');
             const resetButton = document.getElementById('reset-settings');
             
@@ -621,7 +644,8 @@ function generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, ti
                     chartSettings.yMin = minValue;
                 }
                 
-                yMinValueDisplay.textContent = chartSettings.yMin;
+                // 数値入力フィールドも更新
+                yMinInput.value = chartSettings.yMin;
                 updateSelectedRange();
             });
             
@@ -637,7 +661,56 @@ function generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, ti
                     chartSettings.yMax = maxValue;
                 }
                 
-                yMaxValueDisplay.textContent = chartSettings.yMax;
+                // 数値入力フィールドも更新
+                yMaxInput.value = chartSettings.yMax;
+                updateSelectedRange();
+            });
+            
+            // Y軸の最小値入力フィールドの更新時
+            yMinInput.addEventListener('input', function() {
+                let minValue = parseInt(this.value);
+                const maxValue = parseInt(yMaxInput.value);
+                
+                // 空の入力や不正な値の場合は処理しない
+                if (isNaN(minValue)) return;
+                
+                // 最小値と最大値の制約
+                if (minValue < 0) minValue = 0;
+                if (minValue > Y_AXIS_MAX_LIMIT) minValue = Y_AXIS_MAX_LIMIT;
+                
+                if (minValue > maxValue) {
+                    minValue = maxValue;
+                    this.value = maxValue;
+                }
+                
+                chartSettings.yMin = minValue;
+                
+                // スライダーも更新
+                yMinRange.value = minValue;
+                updateSelectedRange();
+            });
+            
+            // Y軸の最大値入力フィールドの更新時
+            yMaxInput.addEventListener('input', function() {
+                let maxValue = parseInt(this.value);
+                const minValue = parseInt(yMinInput.value);
+                
+                // 空の入力や不正な値の場合は処理しない
+                if (isNaN(maxValue)) return;
+                
+                // 最小値と最大値の制約
+                if (maxValue < 0) maxValue = 0;
+                if (maxValue > Y_AXIS_MAX_LIMIT) maxValue = Y_AXIS_MAX_LIMIT;
+                
+                if (maxValue < minValue) {
+                    maxValue = minValue;
+                    this.value = minValue;
+                }
+                
+                chartSettings.yMax = maxValue;
+                
+                // スライダーも更新
+                yMaxRange.value = maxValue;
                 updateSelectedRange();
             });
             
@@ -669,6 +742,8 @@ function generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, ti
                 xMax.value = '${currentDateFormatted}';
                 yMinRange.value = Y_AXIS_DEFAULT_MIN;
                 yMaxRange.value = Y_AXIS_DEFAULT_MAX;
+                yMinInput.value = Y_AXIS_DEFAULT_MIN;
+                yMaxInput.value = Y_AXIS_DEFAULT_MAX;
                 
                 chartSettings = {
                     yMin: Y_AXIS_DEFAULT_MIN,
@@ -676,9 +751,6 @@ function generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, ti
                     xMin: firstTimestamp,
                     xMax: currentTimestamp
                 };
-                
-                yMinValueDisplay.textContent = Y_AXIS_DEFAULT_MIN;
-                yMaxValueDisplay.textContent = Y_AXIS_DEFAULT_MAX;
                 
                 updateSelectedRange();
                 initChart(chartSettings);
