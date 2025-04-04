@@ -3,15 +3,35 @@ import fetch from 'node-fetch';
 import { dirname } from 'path';
 import { fileURLToPath } from 'url';
 
+// モジュールパスの設定
 const __dirname = dirname(fileURLToPath(import.meta.url));
+
+// 定数定義
+const CONSTANTS = {
+  OUTPUT_PATH: './docs/index.html',
+  DOCS_DIR: './docs',
+  Y_AXIS: {
+    DEFAULT_MIN: 0,
+    THRESHOLDS: [50, 100]
+  }
+};
+
+// タイムゾーンマッピング
+const TIMEZONE_MAP = {
+  'Asia/Tokyo': 'JST (UTC+9)',
+  'Asia/Shanghai': 'CST (UTC+8)',
+  'America/New_York': 'EST (UTC-5)',
+  'America/Los_Angeles': 'PST (UTC-8)',
+  'Europe/London': 'GMT (UTC+0)',
+  'Europe/Paris': 'CET (UTC+1)'
+};
 
 // データ取得と処理の主要関数
 async function fetchAndProcessData() {
   try {
+    // Gistからデータを取得
     const gistUrl = `https://gist.github.com/${process.env.GIST_USER}/${process.env.GIST_ID}`;
     console.log(`Fetching Gist data from: ${gistUrl}`);
-
-    // Gistからデータを取得
     const data = await fetchDataFromGist(gistUrl);
     
     // GitHub Actionsのための処理
@@ -30,7 +50,6 @@ async function fetchAndProcessData() {
     
     // HTMLコンテンツの作成と保存
     generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, timezone, timezoneDisplay);
-    
   } catch (error) {
     console.error('Error occurred:', error.message);
     console.error('Stack trace:', error.stack);
@@ -89,6 +108,7 @@ function getTimezoneInfo() {
   
   if (process.env.UTC_OFFSET) {
     if (/^[+-]\d+$/.test(process.env.UTC_OFFSET)) {
+      // 数値オフセットの場合
       const offset = parseInt(process.env.UTC_OFFSET);
       const offsetHours = Math.abs(offset);
       const offsetSign = offset >= 0 ? '+' : '-';
@@ -96,19 +116,9 @@ function getTimezoneInfo() {
       timezoneDisplay = `UTC${offsetSign}${offsetHours}`;
       timezone = `Etc/GMT${offset >= 0 ? '-' : '+'}${offsetHours}`;
     } else {
+      // 名前付きタイムゾーンの場合
       timezone = process.env.UTC_OFFSET;
-      
-      // 一般的なタイムゾーンの表示名
-      const timezoneMap = {
-        'Asia/Tokyo': 'JST (UTC+9)',
-        'Asia/Shanghai': 'CST (UTC+8)',
-        'America/New_York': 'EST (UTC-5)',
-        'America/Los_Angeles': 'PST (UTC-8)',
-        'Europe/London': 'GMT (UTC+0)',
-        'Europe/Paris': 'CET (UTC+1)'
-      };
-      
-      timezoneDisplay = timezoneMap[timezone] || timezone;
+      timezoneDisplay = TIMEZONE_MAP[timezone] || timezone;
     }
   }
   
@@ -148,21 +158,10 @@ function prepareChartData(filteredData, timezone) {
     y: parseFloat(item.remainingData)
   }));
   
-  const values = filteredData.map(item => parseFloat(item.remainingData));
-  
   // Y軸設定の計算
+  const values = filteredData.map(item => parseFloat(item.remainingData));
   const maxValue = Math.max(...values);
-  let yAxisMax;
-  
-  if (maxValue < 50) {
-    yAxisMax = 50;
-  } else if (maxValue < 100) {
-    yAxisMax = 100;
-  } else {
-    yAxisMax = Math.ceil(maxValue / 50) * 50;
-  }
-  
-  const yAxisMin = 0;
+  const yAxisSettings = calculateYAxisRange(maxValue);
   
   // 時間範囲の設定
   const firstDataPoint = filteredData[0];
@@ -171,24 +170,37 @@ function prepareChartData(filteredData, timezone) {
   const lastDate = new Date(lastDataPoint.date);
   const currentDate = new Date();
   
-  const firstDateFormatted = formatDateForInput(firstDate, timezone);
-  const lastDateFormatted = formatDateForInput(lastDate, timezone);
-  const currentDateFormatted = formatDateForInput(currentDate, timezone);
+  const dateInfo = {
+    firstDate,
+    lastDate,
+    currentDate,
+    firstDateFormatted: formatDateForInput(firstDate, timezone),
+    lastDateFormatted: formatDateForInput(lastDate, timezone),
+    currentDateFormatted: formatDateForInput(currentDate, timezone)
+  };
   
   return {
     chartData,
-    dateInfo: {
-      firstDate,
-      lastDate,
-      currentDate,
-      firstDateFormatted,
-      lastDateFormatted,
-      currentDateFormatted
-    },
-    axisSettings: {
-      yAxisMin,
-      yAxisMax
-    }
+    dateInfo,
+    axisSettings: yAxisSettings
+  };
+}
+
+// Y軸の範囲を計算
+function calculateYAxisRange(maxValue) {
+  let yAxisMax;
+  
+  if (maxValue < CONSTANTS.Y_AXIS.THRESHOLDS[0]) {
+    yAxisMax = CONSTANTS.Y_AXIS.THRESHOLDS[0];
+  } else if (maxValue < CONSTANTS.Y_AXIS.THRESHOLDS[1]) {
+    yAxisMax = CONSTANTS.Y_AXIS.THRESHOLDS[1];
+  } else {
+    yAxisMax = Math.ceil(maxValue / 50) * 50;
+  }
+  
+  return {
+    yAxisMin: CONSTANTS.Y_AXIS.DEFAULT_MIN,
+    yAxisMax
   };
 }
 
@@ -355,6 +367,12 @@ function generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, ti
         button:hover {
             background-color: #45a049;
         }
+        button#reset-settings {
+            background-color: #7f8c8d;
+        }
+        button#reset-settings:hover {
+            background-color: #6c7a7a;
+        }
         .datetime-controls {
             display: flex;
             justify-content: space-between;
@@ -365,6 +383,17 @@ function generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, ti
         }
         .datetime-control-item:last-child {
             margin-right: 0;
+        }
+        .buttons-container {
+            margin-top: 20px;
+            text-align: center;
+            padding: 10px;
+            background-color: #e9f7ef;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .buttons-container button {
+            margin: 0 10px;
         }
     </style>
 </head>
@@ -419,11 +448,13 @@ function generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, ti
                     <input type="datetime-local" id="x-max" value="${currentDateFormatted}" min="${firstDateFormatted}" max="${currentDateFormatted}">
                 </div>
             </div>
-            <div class="control-item">
-                <button id="apply-settings">設定を適用</button>
-                <button id="reset-settings">リセット</button>
-            </div>
         </div>
+    </div>
+    
+    <div class="buttons-container">
+        <p>縦軸・横軸の両方の設定を反映します</p>
+        <button id="apply-settings">設定を適用</button>
+        <button id="reset-settings">リセット</button>
     </div>
     
     <script>
@@ -674,10 +705,10 @@ function generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, ti
 </body>
 </html>`;
 
-  const outputPath = './docs/index.html';
-  fs.mkdirSync('./docs', { recursive: true });
-  fs.writeFileSync(outputPath, htmlContent);
-  console.log('Chart HTML generated successfully at:', outputPath);
+  // ディレクトリの作成とファイル保存
+  fs.mkdirSync(CONSTANTS.DOCS_DIR, { recursive: true });
+  fs.writeFileSync(CONSTANTS.OUTPUT_PATH, htmlContent);
+  console.log('Chart HTML generated successfully at:', CONSTANTS.OUTPUT_PATH);
   console.log(`Generated chart with ${chartData.length} data points`);
 }
 

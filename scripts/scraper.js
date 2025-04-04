@@ -1,6 +1,7 @@
 import puppeteer from 'puppeteer';
 import fs from 'fs';
 
+// 定数定義をグループ化
 const SELECTORS = {
   emailInput: '#inputEmail',
   passwordInput: '#inputPassword',
@@ -10,42 +11,66 @@ const SELECTORS = {
   loginErrorMessage: 'body > div.app-main > div.main-body > div > div > div > div > div > div',
 };
 
+const TIMEOUT = {
+  short: 5000,
+  medium: 10000
+};
+
+const URLS = {
+  login: 'https://my.undercurrentss.biz/index.php?rp=/login'
+};
+
+// ユーティリティ関数
 export const logErrorDetails = async (page, errorMessage) => {
-  const currentUrl = page.url();
   const failureData = {
     date: new Date().toISOString(),
     status: 'エラー',
     error: errorMessage,
-    url: currentUrl,
+    url: page.url(),
   };
   fs.writeFileSync('error_details.json', JSON.stringify(failureData, null, 2));
 };
 
-export const isLoggedIn = async (page) => {
+// セレクタが存在するか確認するヘルパー関数
+const waitForSelector = async (page, selector, timeoutMs = TIMEOUT.short, errorMessage) => {
   try {
-    await page.waitForSelector(SELECTORS.serviceDetailsButton, { timeout: 5000 });
+    await page.waitForSelector(selector, { timeout: timeoutMs });
     return true;
-  } catch {
+  } catch (error) {
+    if (errorMessage) {
+      await logErrorDetails(page, errorMessage);
+      throw new Error(errorMessage);
+    }
     return false;
   }
 };
 
+export const isLoggedIn = async (page) => {
+  return await waitForSelector(page, SELECTORS.serviceDetailsButton);
+};
+
 export const login = async (page, email, password) => {
   try {
-    await page.goto('https://my.undercurrentss.biz/index.php?rp=/login');
-    await page.waitForSelector(SELECTORS.emailInput, { timeout: 5000 });
-    await page.waitForSelector(SELECTORS.passwordInput, { timeout: 5000 });
-    await page.waitForSelector(SELECTORS.loginButton, { timeout: 5000 });
-
+    // 環境変数チェック
     if (!email || !password) {
       throw new Error('環境変数 UCSS_EMAIL または UCSS_PASSWORD が設定されていません');
     }
 
+    // ログインページへ移動
+    await page.goto(URLS.login);
+    
+    // 入力フォームの確認
+    await waitForSelector(page, SELECTORS.emailInput, TIMEOUT.short, 'メールアドレス入力フィールドが見つかりません');
+    await waitForSelector(page, SELECTORS.passwordInput, TIMEOUT.short, 'パスワード入力フィールドが見つかりません');
+    await waitForSelector(page, SELECTORS.loginButton, TIMEOUT.short, 'ログインボタンが見つかりません');
+
+    // ログイン情報入力
     await page.type(SELECTORS.emailInput, email);
     await page.type(SELECTORS.passwordInput, password);
     await page.click(SELECTORS.loginButton);
-    await page.waitForNavigation({ timeout: 10000 });
+    await page.waitForNavigation({ timeout: TIMEOUT.medium });
 
+    // ログインエラーチェック
     const errorMessageElement = await page.$(SELECTORS.loginErrorMessage);
     if (errorMessageElement) {
       const errorMessageText = await page.evaluate(el => el.innerText, errorMessageElement);
@@ -54,12 +79,12 @@ export const login = async (page, email, password) => {
       }
     }
 
+    // ログイン成功の確認
     if (!(await isLoggedIn(page))) {
       throw new Error('ログイン後のページに必要な要素が見つかりません');
     }
 
-    const currentUrl = page.url();
-    console.log(`ログイン成功: ${currentUrl}`);
+    console.log(`ログイン成功: ${page.url()}`);
   } catch (error) {
     await logErrorDetails(page, error.message);
     throw error;
@@ -67,21 +92,25 @@ export const login = async (page, email, password) => {
 };
 
 export const waitForPostLoginText = async (page) => {
-  try {
-    await page.waitForSelector(SELECTORS.serviceDetailsButton, { timeout: 10000 });
-  } catch (error) {
-    await logErrorDetails(page, '「サービスの詳細」ページへのリンクが見つかりません');
-    throw error;
-  }
+  await waitForSelector(
+    page, 
+    SELECTORS.serviceDetailsButton, 
+    TIMEOUT.medium, 
+    '「サービスの詳細」ページへのリンクが見つかりません'
+  );
 };
 
 export const logRemainingData = async (page) => {
   try {
     await page.click(SELECTORS.serviceDetailsButton);
-    await page.waitForSelector(SELECTORS.remainingDataText, { timeout: 10000 });
-    const remainingData = await page.$eval(SELECTORS.remainingDataText, el => el.innerText);
+    await waitForSelector(
+      page, 
+      SELECTORS.remainingDataText, 
+      TIMEOUT.medium, 
+      '残りデータ通信量の要素が見つかりません'
+    );
     
-    // GitHub Actionsで安全に処理できるよう、値を出力する前に明示的に文字列としてフォーマット
+    const remainingData = await page.$eval(SELECTORS.remainingDataText, el => el.innerText);
     console.log(`remaining_data:${remainingData.trim()}`);
   } catch (error) {
     await logErrorDetails(page, '残りデータ通信量の取得に失敗しました');
@@ -89,14 +118,18 @@ export const logRemainingData = async (page) => {
   }
 };
 
+// メイン処理
 (async () => {
   const browser = await puppeteer.launch({ args: ['--no-sandbox', '--disable-setuid-sandbox'] });
   const page = await browser.newPage();
+  
   try {
     const { UCSS_EMAIL: email, UCSS_PASSWORD: password } = process.env;
+    
     if (!email || !password) {
       throw new Error('GitHub Actions Secrets UCSS_EMAIL または UCSS_PASSWORD が設定されていません');
     }
+    
     await login(page, email, password);
     await waitForPostLoginText(page);
     await logRemainingData(page);
@@ -107,6 +140,7 @@ export const logRemainingData = async (page) => {
   }
 })();
 
+// 未処理のPromiseエラーを捕捉
 process.on('unhandledRejection', () => {
   process.exit(1);
 });
