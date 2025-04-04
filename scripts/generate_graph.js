@@ -149,29 +149,6 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
             height: 60vh;
             width: 100%;
         }
-        .stats-container {
-            display: flex;
-            justify-content: space-around;
-            margin: 20px 0;
-            flex-wrap: wrap;
-        }
-        .stat-box {
-            background-color: #f5f5f5;
-            border-radius: 8px;
-            padding: 15px;
-            margin: 10px;
-            min-width: 200px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .stat-value {
-            font-size: 24px;
-            font-weight: bold;
-            color: #2c3e50;
-        }
-        .stat-label {
-            font-size: 14px;
-            color: #7f8c8d;
-        }
         .updated-time {
             text-align: center;
             margin-top: 20px;
@@ -188,25 +165,6 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 </head>
 <body>
     <h1>UCSS データ使用量モニター</h1>
-    
-    <div class="stats-container">
-        <div class="stat-box">
-            <div class="stat-label">最新残量</div>
-            <div class="stat-value">${latestValue.toFixed(2)} GB</div>
-        </div>
-        <div class="stat-box">
-            <div class="stat-label">最大値</div>
-            <div class="stat-value">${maxValue.toFixed(2)} GB</div>
-        </div>
-        <div class="stat-box">
-            <div class="stat-label">最小値</div>
-            <div class="stat-value">${minValue.toFixed(2)} GB</div>
-        </div>
-        <div class="stat-box">
-            <div class="stat-label">平均値</div>
-            <div class="stat-value">${averageValue.toFixed(2)} GB</div>
-        </div>
-    </div>
     
     <div class="chart-container">
         <canvas id="myChart"></canvas>
@@ -248,11 +206,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
                         position: 'top',
                     },
                     title: {
-                        display: true,
-                        text: 'UCSS データ使用量の推移',
-                        font: {
-                            size: 18
-                        }
+                        display: false,
                     },
                     tooltip: {
                         callbacks: {
