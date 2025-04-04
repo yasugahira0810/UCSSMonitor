@@ -12,6 +12,8 @@ const CONSTANTS = {
   DOCS_DIR: './docs',
   Y_AXIS: {
     DEFAULT_MIN: 0,
+    DEFAULT_MAX: 50,
+    MAX_LIMIT: 500,
     THRESHOLDS: [50, 100]
   }
 };
@@ -190,13 +192,16 @@ function prepareChartData(filteredData, timezone) {
 function calculateYAxisRange(maxValue) {
   let yAxisMax;
   
-  if (maxValue < CONSTANTS.Y_AXIS.THRESHOLDS[0]) {
-    yAxisMax = CONSTANTS.Y_AXIS.THRESHOLDS[0];
+  if (maxValue < CONSTANTS.Y_AXIS.DEFAULT_MAX) {
+    yAxisMax = CONSTANTS.Y_AXIS.DEFAULT_MAX;
   } else if (maxValue < CONSTANTS.Y_AXIS.THRESHOLDS[1]) {
     yAxisMax = CONSTANTS.Y_AXIS.THRESHOLDS[1];
   } else {
     yAxisMax = Math.ceil(maxValue / 50) * 50;
   }
+  
+  // Ensure the maximum value doesn't exceed the MAX_LIMIT
+  yAxisMax = Math.min(yAxisMax, CONSTANTS.Y_AXIS.MAX_LIMIT);
   
   return {
     yAxisMin: CONSTANTS.Y_AXIS.DEFAULT_MIN,
@@ -273,9 +278,10 @@ function generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, ti
             margin-top: 30px;
             margin-bottom: 40px;
         }
-        .double-range {
+        .dual-slider-container {
             position: relative;
             width: 100%;
+            height: 40px;
             margin-top: 20px;
         }
         .range-track {
@@ -286,6 +292,7 @@ function generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, ti
             top: 50%;
             transform: translateY(-50%);
             border-radius: 3px;
+            z-index: 1;
         }
         .range-selected {
             position: absolute;
@@ -294,35 +301,48 @@ function generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, ti
             top: 50%;
             transform: translateY(-50%);
             border-radius: 3px;
+            z-index: 2;
         }
         input[type="range"] {
             -webkit-appearance: none;
             appearance: none;
+            position: absolute;
             width: 100%;
             background: transparent;
-            position: relative;
-            z-index: 2;
+            top: 0;
+            height: 40px;
+            margin: 0;
+            z-index: 3;
         }
         input[type="range"]::-webkit-slider-thumb {
             -webkit-appearance: none;
             appearance: none;
-            width: 15px;
-            height: 15px;
+            width: 18px;
+            height: 18px;
             border-radius: 50%;
-            background: #4CAF50;
             cursor: pointer;
-            position: relative;
-            z-index: 3;
+            margin-top: -7px;
+            z-index: 5;
         }
         input[type="range"]::-moz-range-thumb {
-            width: 15px;
-            height: 15px;
+            width: 18px;
+            height: 18px;
             border-radius: 50%;
-            background: #4CAF50;
             cursor: pointer;
-            position: relative;
-            z-index: 3;
+            z-index: 5;
             border: none;
+        }
+        #y-min-range::-webkit-slider-thumb {
+            background: #2196F3;
+        }
+        #y-max-range::-webkit-slider-thumb {
+            background: #4CAF50;
+        }
+        #y-min-range::-moz-range-thumb {
+            background: #2196F3;
+        }
+        #y-max-range::-moz-range-thumb {
+            background: #4CAF50;
         }
         .range-values {
             display: flex;
@@ -409,13 +429,16 @@ function generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, ti
         <div class="control-group">
             <h3>縦軸の設定</h3>
             <div class="control-item">
-                <label for="y-range">データ量範囲（最小値：<span id="y-min-value">${yAxisMin}</span> - 最大値：<span id="y-max-value">${yAxisMax}</span>）</label>
-                <div class="double-range">
-                    <input type="range" id="y-range" min="0" max="${yAxisMax * 2}" step="5" value="${yAxisMax}">
-                    <div class="range-values">
-                        <span>0</span>
-                        <span>${yAxisMax * 2}</span>
-                    </div>
+                <label for="y-min-range">データ量範囲（最小値：<span id="y-min-value">${yAxisMin}</span> - 最大値：<span id="y-max-value">${yAxisMax}</span>）</label>
+                <div class="dual-slider-container">
+                    <div class="range-track"></div>
+                    <div id="range-selected" class="range-selected"></div>
+                    <input type="range" id="y-min-range" min="0" max="${CONSTANTS.Y_AXIS.MAX_LIMIT}" step="5" value="${yAxisMin}">
+                    <input type="range" id="y-max-range" min="0" max="${CONSTANTS.Y_AXIS.MAX_LIMIT}" step="5" value="${yAxisMax}">
+                </div>
+                <div class="range-values">
+                    <span>0</span>
+                    <span>${CONSTANTS.Y_AXIS.MAX_LIMIT}</span>
                 </div>
             </div>
         </div>
@@ -459,6 +482,11 @@ function generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, ti
             xMin: firstTimestamp,
             xMax: currentTimestamp  // 初期値を現在の時刻に設定
         };
+
+        // 定数値
+        const Y_AXIS_MAX_LIMIT = ${CONSTANTS.Y_AXIS.MAX_LIMIT};
+        const Y_AXIS_DEFAULT_MIN = ${CONSTANTS.Y_AXIS.DEFAULT_MIN};
+        const Y_AXIS_DEFAULT_MAX = ${CONSTANTS.Y_AXIS.DEFAULT_MAX};
         
         // グラフの初期化関数
         function initChart(settings) {
@@ -556,22 +584,61 @@ function generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, ti
             });
         }
         
+        // スライダーのレンジビジュアルを更新する
+        function updateSelectedRange() {
+            const minRange = document.getElementById('y-min-range');
+            const maxRange = document.getElementById('y-max-range');
+            const selectedRange = document.getElementById('range-selected');
+            
+            const rangeMax = parseInt(minRange.max);
+            const minPercent = (parseInt(minRange.value) / rangeMax) * 100;
+            const maxPercent = (parseInt(maxRange.value) / rangeMax) * 100;
+            
+            selectedRange.style.left = minPercent + '%';
+            selectedRange.style.width = (maxPercent - minPercent) + '%';
+        }
+        
         // UIイベントリスナー設定
         function setupEventListeners() {
             const xMin = document.getElementById('x-min');
             const xMax = document.getElementById('x-max');
-            const yRange = document.getElementById('y-range');
+            const yMinRange = document.getElementById('y-min-range');
+            const yMaxRange = document.getElementById('y-max-range');
             const yMinValueDisplay = document.getElementById('y-min-value');
             const yMaxValueDisplay = document.getElementById('y-max-value');
             const applyButton = document.getElementById('apply-settings');
             const resetButton = document.getElementById('reset-settings');
             
-            // Y軸スライダーの値更新時
-            yRange.addEventListener('input', function() {
-                chartSettings.yMax = parseInt(this.value);
-                chartSettings.yMin = 0; // 最小値は常に0
+            // Y軸の最小値スライダーの更新時
+            yMinRange.addEventListener('input', function() {
+                const minValue = parseInt(this.value);
+                const maxValue = parseInt(yMaxRange.value);
+                
+                if (minValue > maxValue) {
+                    this.value = maxValue;
+                    chartSettings.yMin = maxValue;
+                } else {
+                    chartSettings.yMin = minValue;
+                }
+                
                 yMinValueDisplay.textContent = chartSettings.yMin;
+                updateSelectedRange();
+            });
+            
+            // Y軸の最大値スライダーの更新時
+            yMaxRange.addEventListener('input', function() {
+                const maxValue = parseInt(this.value);
+                const minValue = parseInt(yMinRange.value);
+                
+                if (maxValue < minValue) {
+                    this.value = minValue;
+                    chartSettings.yMax = minValue;
+                } else {
+                    chartSettings.yMax = maxValue;
+                }
+                
                 yMaxValueDisplay.textContent = chartSettings.yMax;
+                updateSelectedRange();
             });
             
             // 設定適用ボタン
@@ -600,19 +667,25 @@ function generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, ti
             resetButton.addEventListener('click', function() {
                 xMin.value = '${firstDateFormatted}';
                 xMax.value = '${currentDateFormatted}';
-                yRange.value = ${yAxisMax};
-                yMinValueDisplay.textContent = ${yAxisMin};
-                yMaxValueDisplay.textContent = ${yAxisMax};
+                yMinRange.value = Y_AXIS_DEFAULT_MIN;
+                yMaxRange.value = Y_AXIS_DEFAULT_MAX;
                 
                 chartSettings = {
-                    yMin: ${yAxisMin},
-                    yMax: ${yAxisMax},
+                    yMin: Y_AXIS_DEFAULT_MIN,
+                    yMax: Y_AXIS_DEFAULT_MAX,
                     xMin: firstTimestamp,
                     xMax: currentTimestamp
                 };
                 
+                yMinValueDisplay.textContent = Y_AXIS_DEFAULT_MIN;
+                yMaxValueDisplay.textContent = Y_AXIS_DEFAULT_MAX;
+                
+                updateSelectedRange();
                 initChart(chartSettings);
             });
+            
+            // 初期化時にも選択範囲を表示
+            updateSelectedRange();
         }
         
         // DOMロード時の初期化
