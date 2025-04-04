@@ -140,13 +140,14 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
     // 現在の日時を取得（最終更新時間として使用）
     const currentDate = new Date();
     
-    // 日時フォーマット関数（YYYY-MM-DDThh形式に変換）
+    // 日時フォーマット関数（YYYY-MM-DDThh:mm形式に変換 - 分を追加）
     const formatDateForInput = (date) => {
       const year = date.getFullYear();
       const month = String(date.getMonth() + 1).padStart(2, '0');
       const day = String(date.getDate()).padStart(2, '0');
       const hour = String(date.getHours()).padStart(2, '0');
-      return `${year}-${month}-${day}T${hour}`;
+      const minute = String(date.getMinutes()).padStart(2, '0'); // 分を追加
+      return `${year}-${month}-${day}T${hour}:${minute}`; // 時間と分の間にコロンを追加
     };
     
     const firstDateFormatted = formatDateForInput(firstDate);
@@ -314,7 +315,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
             yMin: ${yAxisMin},
             yMax: ${yAxisMax},
             xMin: firstTimestamp,
-            xMax: currentTimestamp
+            xMax: currentTimestamp  // 初期値を現在の時刻に設定
         };
         
         // グラフの初期化関数
@@ -479,9 +480,9 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
                 chartSettings.yMin = Number(yMinValue.value);
                 chartSettings.yMax = Number(yMaxValue.value);
                 
-                // 日時入力から時間を取得
-                const xMinDate = new Date(xMin.value + ':00');
-                const xMaxDate = new Date(xMax.value + ':00');
+                // 日時入力から時間を取得（分を含む完全な日時形式を想定）
+                const xMinDate = new Date(xMin.value);
+                const xMaxDate = new Date(xMax.value);
                 
                 chartSettings.xMin = xMinDate.getTime();
                 chartSettings.xMax = xMaxDate.getTime();
@@ -509,13 +510,13 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
                 yMaxValue.value = ${yAxisMax};
                 yMaxDisplay.textContent = '${yAxisMax} GB';
                 xMin.value = '${firstDateFormatted}';
-                xMax.value = '${currentDateFormatted}';
+                xMax.value = '${currentDateFormatted}';  // リセット時も最終更新時刻を使用
                 
                 chartSettings = {
                     yMin: ${yAxisMin},
                     yMax: ${yAxisMax},
                     xMin: firstTimestamp,
-                    xMax: currentTimestamp
+                    xMax: currentTimestamp  // リセット時も現在の時刻を使用
                 };
                 
                 initChart(chartSettings);
