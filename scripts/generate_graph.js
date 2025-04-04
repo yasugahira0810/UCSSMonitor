@@ -1,164 +1,203 @@
 import fs from 'fs';
-import Chart from 'chart.js/auto';
 import fetch from 'node-fetch';
 import { dirname } from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-(async () => {
-  const gistUrl = `https://gist.github.com/${process.env.GIST_USER}/${process.env.GIST_ID}`;
-  console.log(`Fetching Gist data from: ${gistUrl}`);
-
+// データ取得と処理の主要関数
+async function fetchAndProcessData() {
   try {
-    // Fetch raw data from gist
-    const response = await fetch(`${gistUrl}/raw/data.json`);
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
+    const gistUrl = `https://gist.github.com/${process.env.GIST_USER}/${process.env.GIST_ID}`;
+    console.log(`Fetching Gist data from: ${gistUrl}`);
+
+    // Gistからデータを取得
+    const data = await fetchDataFromGist(gistUrl);
     
-    const dataContent = await response.json();
-
-    if (!Array.isArray(dataContent)) {
-      throw new Error('Invalid data format: expected an array');
-    }
-
-    console.log(`Retrieved ${dataContent.length} data points from the gist`);
-
-    // GitHub Actionsで使用する値を出力
-    if (process.env.GITHUB_ACTIONS) {
-      const latestData = dataContent[dataContent.length - 1];
-      // 新しいGitHub Actions出力形式を使用
-      const remainingValue = parseFloat(latestData.remainingData).toFixed(1);
-      fs.appendFileSync(process.env.GITHUB_OUTPUT, `remainingData=${remainingValue}\n`);
-    }
-
-    // フィルタリングされたデータを用意
-    // 1時間ごとにデータポイントをフィルタリング
-    const filteredData = [];
-    let lastHour = null;
+    // GitHub Actionsのための処理
+    processGitHubActions(data);
     
-    dataContent.forEach(item => {
-      const date = new Date(item.date);
-      const currentHour = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}-${date.getHours()}`;
-      
-      // 新しい時間またはデータの先頭の場合
-      if (currentHour !== lastHour) {
-        filteredData.push(item);
-        lastHour = currentHour;
-      }
-    });
-    
+    // データの前処理
+    const filteredData = filterHourlyData(data);
     console.log(`Filtered to ${filteredData.length} data points (approx. hourly)`);
-
-    // 環境変数からUTCオフセットを取得
-    let timezone = 'UTC';
-    let timezoneDisplay = 'UTC+0';
     
-    if (process.env.UTC_OFFSET) {
-      // タイムゾーンがUTCからのオフセット（例: +8, +9など）として指定されている場合
-      if (/^[+-]\d+$/.test(process.env.UTC_OFFSET)) {
-        const offset = parseInt(process.env.UTC_OFFSET);
-        const offsetHours = Math.abs(offset);
-        const offsetSign = offset >= 0 ? '+' : '-'; // 直感的な設定: +8はUTC+8時間
-        
-        timezoneDisplay = `UTC${offsetSign}${offsetHours}`;
-        
-        // 日付オブジェクトのタイムゾーン設定用にUTCオフセット文字列を作成
-        // 例: +8 → 'Etc/GMT-8', +9 → 'Etc/GMT-9'
-        // 注: Etc/GMTの接頭辞では、標準的な表記とは逆に、プラスは西（マイナス時間）、マイナスは東（プラス時間）を意味する
-        timezone = `Etc/GMT${offset >= 0 ? '-' : '+'}${offsetHours}`;
-      } 
-      // 既存のIANAタイムゾーン識別子（例: Asia/Tokyo, Asia/Shanghai）が指定されている場合
-      else {
-        timezone = process.env.UTC_OFFSET;
-        
-        // 一般的なタイムゾーンの表示名
-        const timezoneMap = {
-          'Asia/Tokyo': 'JST (UTC+9)',
-          'Asia/Shanghai': 'CST (UTC+8)',
-          'America/New_York': 'EST (UTC-5)',
-          'America/Los_Angeles': 'PST (UTC-8)',
-          'Europe/London': 'GMT (UTC+0)',
-          'Europe/Paris': 'CET (UTC+1)'
-        };
-        
-        timezoneDisplay = timezoneMap[timezone] || timezone;
-      }
-    }
-    
+    // タイムゾーン情報の取得
+    const { timezone, timezoneDisplay } = getTimezoneInfo();
     console.log(`Using timezone: ${timezone} (Display: ${timezoneDisplay})`);
-
-    // Format dates for better readability
-    const formatDate = (dateString) => {
-      const date = new Date(dateString);
-      return date.toLocaleString('ja-JP', {
-        month: 'numeric',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        timeZone: timezone
-      });
-    };
-
-    // 時間スケール用のデータ準備
-    const chartData = filteredData.map(item => ({
-      x: new Date(item.date).getTime(), // タイムスタンプを使用
-      y: parseFloat(item.remainingData)
-    }));
     
-    // 表示用ラベルは依然として必要
-    const labels = filteredData.map(item => formatDate(item.date));
-    const values = filteredData.map(item => parseFloat(item.remainingData));
+    // グラフ描画のためにデータを準備
+    const { chartData, dateInfo, axisSettings } = prepareChartData(filteredData, timezone);
+    
+    // HTMLコンテンツの作成と保存
+    generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, timezone, timezoneDisplay);
+    
+  } catch (error) {
+    console.error('Error occurred:', error.message);
+    console.error('Stack trace:', error.stack);
+    process.exit(1);
+  }
+}
 
-    // Calculate statistics
-    const latestValue = values[values.length - 1];
-    const maxValue = Math.max(...values);
-    const minValue = Math.min(...values);
-    const averageValue = values.reduce((sum, val) => sum + val, 0) / values.length;
+// Gistからデータを取得
+async function fetchDataFromGist(gistUrl) {
+  const response = await fetch(`${gistUrl}/raw/data.json`);
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+  
+  const dataContent = await response.json();
+  if (!Array.isArray(dataContent)) {
+    throw new Error('Invalid data format: expected an array');
+  }
+  
+  console.log(`Retrieved ${dataContent.length} data points from the gist`);
+  return dataContent;
+}
 
-    // Determine the max value for Y-axis based on the rule
-    let yAxisMax;
-    if (maxValue < 50) {
-      yAxisMax = 50;
-    } else if (maxValue < 100) {
-      yAxisMax = 100;
-    } else {
-      // For values >= 100GB, round up to nearest 50
-      yAxisMax = Math.ceil(maxValue / 50) * 50;
+// GitHub Actionsのための処理
+function processGitHubActions(data) {
+  if (process.env.GITHUB_ACTIONS) {
+    const latestData = data[data.length - 1];
+    const remainingValue = parseFloat(latestData.remainingData).toFixed(1);
+    fs.appendFileSync(process.env.GITHUB_OUTPUT, `remainingData=${remainingValue}\n`);
+  }
+}
+
+// 1時間ごとにデータをフィルタリング
+function filterHourlyData(data) {
+  const filteredData = [];
+  let lastHour = null;
+  
+  data.forEach(item => {
+    const date = new Date(item.date);
+    const currentHour = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}-${date.getHours()}`;
+    
+    // 新しい時間またはデータの先頭の場合
+    if (currentHour !== lastHour) {
+      filteredData.push(item);
+      lastHour = currentHour;
     }
+  });
+  
+  return filteredData;
+}
 
-    // Y軸の最小値をデフォルトで0に設定
-    const yAxisMin = 0;
+// タイムゾーン情報の取得
+function getTimezoneInfo() {
+  let timezone = 'UTC';
+  let timezoneDisplay = 'UTC+0';
+  
+  if (process.env.UTC_OFFSET) {
+    if (/^[+-]\d+$/.test(process.env.UTC_OFFSET)) {
+      const offset = parseInt(process.env.UTC_OFFSET);
+      const offsetHours = Math.abs(offset);
+      const offsetSign = offset >= 0 ? '+' : '-';
+      
+      timezoneDisplay = `UTC${offsetSign}${offsetHours}`;
+      timezone = `Etc/GMT${offset >= 0 ? '-' : '+'}${offsetHours}`;
+    } else {
+      timezone = process.env.UTC_OFFSET;
+      
+      // 一般的なタイムゾーンの表示名
+      const timezoneMap = {
+        'Asia/Tokyo': 'JST (UTC+9)',
+        'Asia/Shanghai': 'CST (UTC+8)',
+        'America/New_York': 'EST (UTC-5)',
+        'America/Los_Angeles': 'PST (UTC-8)',
+        'Europe/London': 'GMT (UTC+0)',
+        'Europe/Paris': 'CET (UTC+1)'
+      };
+      
+      timezoneDisplay = timezoneMap[timezone] || timezone;
+    }
+  }
+  
+  return { timezone, timezoneDisplay };
+}
 
-    // 時間範囲の設定用に最初と最後のデータポイントの日時を取得
-    const firstDataPoint = filteredData[0];
-    const lastDataPoint = filteredData[filteredData.length - 1];
-    const firstDate = new Date(firstDataPoint.date);
-    const lastDate = new Date(lastDataPoint.date);
-    
-    // 現在の日時を取得（最終更新時間として使用）
-    const currentDate = new Date();
-    
-    // 日時フォーマット関数（YYYY-MM-DDThh:mm形式に変換 - 分を追加）
-    const formatDateForInput = (date) => {
-      // タイムゾーンを考慮した日付の生成
-      const dateInTimezone = new Date(date.toLocaleString('en-US', { timeZone: timezone }));
-      
-      const year = dateInTimezone.getFullYear();
-      const month = String(dateInTimezone.getMonth() + 1).padStart(2, '0');
-      const day = String(dateInTimezone.getDate()).padStart(2, '0');
-      const hour = String(dateInTimezone.getHours()).padStart(2, '0');
-      const minute = String(dateInTimezone.getMinutes()).padStart(2, '0');
-      
-      return `${year}-${month}-${day}T${hour}:${minute}`;
-    };
-    
-    const firstDateFormatted = formatDateForInput(firstDate);
-    const lastDateFormatted = formatDateForInput(lastDate);
-    const currentDateFormatted = formatDateForInput(currentDate);
-    
-    const htmlContent = `<!DOCTYPE html>
+// 日付のフォーマット関数
+function formatDate(dateString, timezone) {
+  const date = new Date(dateString);
+  return date.toLocaleString('ja-JP', {
+    month: 'numeric',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: timezone
+  });
+}
+
+// YYYY-MM-DDThh:mm形式へのフォーマット関数
+function formatDateForInput(date, timezone) {
+  const dateInTimezone = new Date(date.toLocaleString('en-US', { timeZone: timezone }));
+  
+  const year = dateInTimezone.getFullYear();
+  const month = String(dateInTimezone.getMonth() + 1).padStart(2, '0');
+  const day = String(dateInTimezone.getDate()).padStart(2, '0');
+  const hour = String(dateInTimezone.getHours()).padStart(2, '0');
+  const minute = String(dateInTimezone.getMinutes()).padStart(2, '0');
+  
+  return `${year}-${month}-${day}T${hour}:${minute}`;
+}
+
+// グラフデータの準備
+function prepareChartData(filteredData, timezone) {
+  // 時間スケール用データの準備
+  const chartData = filteredData.map(item => ({
+    x: new Date(item.date).getTime(),
+    y: parseFloat(item.remainingData)
+  }));
+  
+  const values = filteredData.map(item => parseFloat(item.remainingData));
+  
+  // Y軸設定の計算
+  const maxValue = Math.max(...values);
+  let yAxisMax;
+  
+  if (maxValue < 50) {
+    yAxisMax = 50;
+  } else if (maxValue < 100) {
+    yAxisMax = 100;
+  } else {
+    yAxisMax = Math.ceil(maxValue / 50) * 50;
+  }
+  
+  const yAxisMin = 0;
+  
+  // 時間範囲の設定
+  const firstDataPoint = filteredData[0];
+  const lastDataPoint = filteredData[filteredData.length - 1];
+  const firstDate = new Date(firstDataPoint.date);
+  const lastDate = new Date(lastDataPoint.date);
+  const currentDate = new Date();
+  
+  const firstDateFormatted = formatDateForInput(firstDate, timezone);
+  const lastDateFormatted = formatDateForInput(lastDate, timezone);
+  const currentDateFormatted = formatDateForInput(currentDate, timezone);
+  
+  return {
+    chartData,
+    dateInfo: {
+      firstDate,
+      lastDate,
+      currentDate,
+      firstDateFormatted,
+      lastDateFormatted,
+      currentDateFormatted
+    },
+    axisSettings: {
+      yAxisMin,
+      yAxisMax
+    }
+  };
+}
+
+// HTMLファイルの生成と保存
+function generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, timezone, timezoneDisplay) {
+  const { firstDate, lastDate, currentDate, firstDateFormatted, currentDateFormatted } = dateInfo;
+  const { yAxisMin, yAxisMax } = axisSettings;
+  
+  const htmlContent = `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -486,7 +525,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
                             },
                             title: {
                                 display: true,
-                                text: `Date/Time (${timezoneDisplay})`
+                                text: 'Date/Time (' + timezoneDisplay + ')'
                             },
                             ticks: {
                                 maxRotation: 45,
@@ -503,9 +542,8 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
             });
         }
         
-        // UIコントロールとイベントリスナーの設定
-        document.addEventListener('DOMContentLoaded', function() {
-            // 要素の参照を取得
+        // UIイベントリスナー設定
+        function setupEventListeners() {
             const yMinSlider = document.getElementById('y-min');
             const yMaxSlider = document.getElementById('y-max');
             const yMinValue = document.getElementById('y-min-value');
@@ -516,7 +554,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
             const applyButton = document.getElementById('apply-settings');
             const resetButton = document.getElementById('reset-settings');
             
-            // Y軸の範囲スライダーの表示を更新する関数
+            // スライダー表示更新
             function updateRangeSlider() {
                 const minVal = parseInt(yMinSlider.value);
                 const maxVal = parseInt(yMaxSlider.value);
@@ -527,15 +565,13 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
                 ySelectedRange.style.width = (maxPercent - minPercent) + '%';
             }
             
-            // 初期状態で範囲スライダーを更新
             updateRangeSlider();
             
-            // 最小値スライダーのイベントリスナー
+            // 最小値スライダーイベント
             yMinSlider.addEventListener('input', function() {
                 const minVal = parseInt(this.value);
                 const maxVal = parseInt(yMaxSlider.value);
                 
-                // 最小値が最大値を超えないようにする
                 if (minVal >= maxVal) {
                     this.value = maxVal - 5;
                 }
@@ -544,12 +580,11 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
                 updateRangeSlider();
             });
             
-            // 最大値スライダーのイベントリスナー
+            // 最大値スライダーイベント
             yMaxSlider.addEventListener('input', function() {
                 const minVal = parseInt(yMinSlider.value);
                 const maxVal = parseInt(this.value);
                 
-                // 最大値が最小値を下回らないようにする
                 if (maxVal <= minVal) {
                     this.value = minVal + 5;
                 }
@@ -558,12 +593,11 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
                 updateRangeSlider();
             });
             
-            // 最小値入力フィールドのイベントリスナー
+            // 最小値入力フィールドイベント
             yMinValue.addEventListener('input', function() {
                 const minVal = parseInt(this.value);
                 const maxVal = parseInt(yMaxValue.value);
                 
-                // 最小値が最大値を超えないようにする
                 if (minVal >= maxVal) {
                     this.value = maxVal - 5;
                 }
@@ -572,12 +606,11 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
                 updateRangeSlider();
             });
             
-            // 最大値入力フィールドのイベントリスナー
+            // 最大値入力フィールドイベント
             yMaxValue.addEventListener('input', function() {
                 const minVal = parseInt(yMinValue.value);
                 const maxVal = parseInt(this.value);
                 
-                // 最大値が最小値を下回らないようにする
                 if (maxVal <= minVal) {
                     this.value = minVal + 5;
                 }
@@ -591,7 +624,6 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
                 chartSettings.yMin = Number(yMinValue.value);
                 chartSettings.yMax = Number(yMaxValue.value);
                 
-                // 日時入力から時間を取得（分を含む完全な日時形式を想定）
                 const xMinDate = new Date(xMin.value);
                 const xMaxDate = new Date(xMax.value);
                 
@@ -619,34 +651,35 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
                 yMaxSlider.value = ${yAxisMax};
                 yMaxValue.value = ${yAxisMax};
                 xMin.value = '${firstDateFormatted}';
-                xMax.value = '${currentDateFormatted}';  // リセット時も最終更新時刻を使用
+                xMax.value = '${currentDateFormatted}';
                 
                 chartSettings = {
                     yMin: ${yAxisMin},
                     yMax: ${yAxisMax},
                     xMin: firstTimestamp,
-                    xMax: currentTimestamp  // リセット時も現在の時刻を使用
+                    xMax: currentTimestamp
                 };
                 
                 updateRangeSlider();
                 initChart(chartSettings);
             });
-            
-            // 初期グラフ描画
+        }
+        
+        // DOMロード時の初期化
+        document.addEventListener('DOMContentLoaded', function() {
+            setupEventListeners();
             initChart(chartSettings);
         });
     </script>
 </body>
 </html>`;
-    const outputPath = './docs/index.html';
-    fs.mkdirSync('./docs', { recursive: true });
-    fs.writeFileSync(outputPath, htmlContent);
-    console.log('Chart HTML generated successfully at:', outputPath);
-    console.log(`Generated chart with ${chartData.length} data points`);
 
-  } catch (error) {
-    console.error('Error occurred:', error.message);
-    console.error('Stack trace:', error.stack);
-    process.exit(1);
-  }
-})();
+  const outputPath = './docs/index.html';
+  fs.mkdirSync('./docs', { recursive: true });
+  fs.writeFileSync(outputPath, htmlContent);
+  console.log('Chart HTML generated successfully at:', outputPath);
+  console.log(`Generated chart with ${chartData.length} data points`);
+}
+
+// メイン処理の実行
+fetchAndProcessData();
