@@ -175,7 +175,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
                     tooltip: {
                         callbacks: {
                             label: function(context) {
-                                return `残りデータ量: ${context.parsed.y.toFixed(2)} GB`;
+                                return "Remaining data: " + context.parsed.y.toFixed(2) + " GB";
                             }
                         }
                     }
