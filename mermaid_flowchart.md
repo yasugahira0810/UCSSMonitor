@@ -25,7 +25,6 @@ sequenceDiagram
     GitHubPages->>GitHubPages: Checkout repository
     GitHubPages->>GitHubPages: Setup Node.js
     GitHubPages->>GitHubPages: Install dependencies
-    GitHubPages->>GitHubPages: Upload artifact for GitHub Pages
     GitHubPages->>GitHubPages: Deploy to GitHub Pages
     GitHub->>Scraper: Trigger run_tests job
     Scraper->>Scraper: Checkout repository
@@ -33,4 +32,8 @@ sequenceDiagram
     Scraper->>Scraper: Cache Node.js modules
     Scraper->>Scraper: Install dependencies
     Scraper->>Scraper: Run tests
+    GitHub->>Scraper: Trigger commit_to_main job
+    Scraper->>Scraper: Checkout repository
+    Scraper->>Scraper: Set up Node.js
+    Scraper->>Scraper: Commit and push changes
 ```
