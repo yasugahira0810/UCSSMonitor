@@ -57,6 +57,7 @@ export const login = async (page, email, password) => {
     if (!(await isLoggedIn(page))) {
       throw new Error('ログイン後のページに必要な要素が見つかりません');
     }
+
     const currentUrl = page.url();
     console.log(`ログイン成功: ${currentUrl}`);
   } catch (error) {
@@ -79,8 +80,10 @@ export const logRemainingData = async (page) => {
     await page.click(SELECTORS.serviceDetailsButton);
     await page.waitForSelector(SELECTORS.remainingDataText, { timeout: 10000 });
     const remainingData = await page.$eval(SELECTORS.remainingDataText, el => el.innerText);
-    console.log(remainingData); // Output only the remainingData value for GitHub Actions
-    console.log(`::set-output name=remainingData::${remainingData}`); // Add GitHub Actions output format
+    
+    // Just output the raw value without any GitHub Actions directives
+    // GitHub Actions will capture this as the command output
+    console.log(remainingData.trim());
   } catch (error) {
     await logErrorDetails(page, '残りデータ通信量の取得に失敗しました');
     throw error;
@@ -92,11 +95,9 @@ export const logRemainingData = async (page) => {
   const page = await browser.newPage();
   try {
     const { UCSS_EMAIL: email, UCSS_PASSWORD: password } = process.env;
-
     if (!email || !password) {
       throw new Error('GitHub Actions Secrets UCSS_EMAIL または UCSS_PASSWORD が設定されていません');
     }
-
     await login(page, email, password);
     await waitForPostLoginText(page);
     await logRemainingData(page);
