@@ -12,7 +12,7 @@ const CONSTANTS = {
   DOCS_DIR: './docs',
   Y_AXIS: {
     DEFAULT_MIN: 0,
-    DEFAULT_MAX: 50,
+    DEFAULT_MAX: 100,
     MAX_LIMIT: 500,
     THRESHOLDS: [50, 100]
   }
@@ -95,17 +95,15 @@ function filterHourlyData(data) {
   if (!data || data.length === 0) {
     return [];
   }
-
   const filteredData = [];
   let lastHour = null;
-  let lastDate = null;
   
   // データを日付順にソート（念のため）
   const sortedData = [...data].sort((a, b) => {
     return new Date(a.date) - new Date(b.date);
   });
   
-  sortedData.forEach((item, index) => {
+  sortedData.forEach(item => {
     const date = new Date(item.date);
     const currentHour = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}-${date.getHours()}`;
     
@@ -113,24 +111,6 @@ function filterHourlyData(data) {
     if (currentHour !== lastHour) {
       filteredData.push(item);
       lastHour = currentHour;
-      lastDate = date;
-    }
-    // 以下の場合はデータポイントを追加する:
-    // 1. 前回のデータポイントから2時間以上経過している場合
-    // 2. 現在または直前のデータポイントのいずれかにremainingDataがある場合
-    // これにより、nullの前後で線が適切に繋がるようになります
-    else if (lastDate && index > 0) {
-      const timeDiff = date - lastDate;
-      const hoursDiff = timeDiff / (1000 * 60 * 60);
-      const prevItem = sortedData[index - 1];
-      
-      if (hoursDiff >= 2 || 
-          (item.remainingData !== null && item.remainingData !== undefined) || 
-          (prevItem.remainingData === null || prevItem.remainingData === undefined)) {
-        filteredData.push(item);
-        lastHour = currentHour;
-        lastDate = date;
-      }
     }
   });
   

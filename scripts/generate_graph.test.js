@@ -360,34 +360,77 @@ describe('generate_graph.js', () => {
       ];
       const timezone = 'UTC';
       
-      // Mock Date constructor
+      // モックを安全に設定する方法で実装
       const originalDate = global.Date;
-      jest.spyOn(global, 'Date').mockImplementation((arg) => {
-        if (arg) {
-          return new originalDate(arg);
-        }
-        return new originalDate('2023-01-01T04:00:00Z');
-      });
+      const mockDate = jest.fn()
+        .mockImplementation((arg) => {
+          if (arg === '2023-01-01T00:00:00Z') {
+            return {
+              getTime: () => 1672531200000,
+              toLocaleString: () => '2023-01-01 00:00:00',
+              getFullYear: () => 2023,
+              getMonth: () => 0,
+              getDate: () => 1,
+              getHours: () => 0,
+              getMinutes: () => 0
+            };
+          } else if (arg === '2023-01-01T01:00:00Z' || arg === '2023-01-01T02:00:00Z') {
+            return {
+              getTime: () => 1672534800000 + (arg === '2023-01-01T02:00:00Z' ? 3600000 : 0),
+              toLocaleString: () => '2023-01-01 01:00:00',
+              getFullYear: () => 2023,
+              getMonth: () => 0,
+              getDate: () => arg === '2023-01-01T01:00:00Z' ? 1 : 1,
+              getHours: () => arg === '2023-01-01T01:00:00Z' ? 1 : 2,
+              getMinutes: () => 0
+            };
+          } else if (arg === '2023-01-01T03:00:00Z') {
+            return {
+              getTime: () => 1672542000000,
+              toLocaleString: () => '2023-01-01 03:00:00',
+              getFullYear: () => 2023,
+              getMonth: () => 0,
+              getDate: () => 1,
+              getHours: () => 3,
+              getMinutes: () => 0
+            };
+          } else {
+            return {
+              getTime: () => 1672545600000, // '2023-01-01T04:00:00Z'
+              toLocaleString: () => '2023-01-01 04:00:00',
+              getFullYear: () => 2023,
+              getMonth: () => 0,
+              getDate: () => 1,
+              getHours: () => 4,
+              getMinutes: () => 0
+            };
+          }
+        });
       
-      // Keep static methods
-      global.Date.now = originalDate.now;
-      global.Date.UTC = originalDate.UTC;
-      global.Date.parse = originalDate.parse;
+      // 静的メソッドをコピー
+      mockDate.UTC = originalDate.UTC;
+      mockDate.parse = originalDate.parse;
+      mockDate.now = jest.fn().mockReturnValue(1672545600000); // 2023-01-01T04:00:00Z
       
-      // Run the test
-      const result = prepareChartData(filteredData, timezone);
+      // グローバルオブジェクトを置き換え
+      global.Date = mockDate;
       
-      // Test chart data - should only have 2 points (the non-null values)
-      expect(result.chartData).toHaveLength(2);
-      
-      // The first point should be the first item in the filtered data
-      expect(result.chartData[0].y).toBe(10.5);
-      
-      // The last point should be the last valid item
-      expect(result.chartData[1].y).toBe(9.8);
-      
-      // Clean up
-      jest.restoreAllMocks();
+      try {
+        // テスト実行
+        const result = prepareChartData(filteredData, timezone);
+        
+        // チャートデータに2つのポイントだけが含まれているか確認（nullでないデータ）
+        expect(result.chartData).toHaveLength(2);
+        
+        // 最初のポイントが最初のアイテムのデータポイントであることを確認
+        expect(result.chartData[0].y).toBe(10.5);
+        
+        // 最後のポイントが最後の有効なアイテムであることを確認
+        expect(result.chartData[1].y).toBe(9.8);
+      } finally {
+        // テスト終了後に元のDateオブジェクトを復元
+        global.Date = originalDate;
+      }
     });
   });
 
@@ -533,8 +576,26 @@ describe('generate_graph.js', () => {
   
   // generateAndSaveHtml のテスト
   describe('generateAndSaveHtml', () => {
+    let originalDate;
+    
     beforeEach(() => {
       jest.clearAllMocks();
+      originalDate = global.Date;
+      
+      // 安全なDateモックを実装
+      const mockDate = function() {
+        return {
+          getTime: () => 1672704000000,
+          toLocaleString: () => '2023-01-03 00:00:00'
+        };
+      };
+      
+      mockDate.now = jest.fn().mockReturnValue(1672704000000);
+      global.Date = mockDate;
+    });
+    
+    afterEach(() => {
+      global.Date = originalDate;
     });
     
     it('should create directory and save HTML file', () => {
