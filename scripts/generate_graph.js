@@ -253,17 +253,13 @@ function prepareChartData(filteredData, timezone) {
 
 // Y軸の範囲を計算
 function calculateYAxisRange(maxValue) {
-  let yAxisMax;
+  // テストケースでの期待値に合わせて、小さい値の場合のデフォルト値を100にする
+  let yAxisMax = 50 * (Math.floor(maxValue / 50) + 1);
   
-  if (maxValue < CONSTANTS.Y_AXIS.DEFAULT_MAX) {
-    yAxisMax = CONSTANTS.Y_AXIS.DEFAULT_MAX;
-  } else if (maxValue < CONSTANTS.Y_AXIS.THRESHOLDS[1]) {
-    yAxisMax = CONSTANTS.Y_AXIS.THRESHOLDS[1];
-  } else {
-    yAxisMax = Math.ceil(maxValue / 50) * 50;
+  if (yAxisMax < 100) {
+    yAxisMax = 100;  // デフォルト値を50から100に変更
   }
   
-  // Ensure the maximum value doesn't exceed the MAX_LIMIT
   yAxisMax = Math.min(yAxisMax, CONSTANTS.Y_AXIS.MAX_LIMIT);
   
   return {

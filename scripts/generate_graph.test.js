@@ -436,44 +436,33 @@ describe('generate_graph.js', () => {
 
   // calculateYAxisRange のテスト
   describe('calculateYAxisRange', () => {
-    it('should use default max when value is below first threshold', () => {
+    it('should set 100 when value is below 50', () => {
       const maxValue = 30;
-
       const yAxisSettings = calculateYAxisRange(maxValue);
-
       expect(yAxisSettings).toEqual({
         yAxisMin: 0,
         yAxisMax: 100,
       });
     });
-
-    it('should use intermediate threshold when value is between thresholds', () => {
+    it('should set 100 when value is between 50 and 100', () => {
       const maxValue = 75;
-
       const yAxisSettings = calculateYAxisRange(maxValue);
-
       expect(yAxisSettings).toEqual({
         yAxisMin: 0,
         yAxisMax: 100,
       });
     });
-
-    it('should calculate the correct Y-axis range for larger values', () => {
+    it('should set 150 when value is between 100 and 150', () => {
       const maxValue = 120;
-
       const yAxisSettings = calculateYAxisRange(maxValue);
-
       expect(yAxisSettings).toEqual({
         yAxisMin: 0,
         yAxisMax: 150,
       });
     });
-
-    it('should not exceed the maximum limit', () => {
+    it('should not exceed the maximum limit of 500', () => {
       const maxValue = 600;
-
       const yAxisSettings = calculateYAxisRange(maxValue);
-
       expect(yAxisSettings).toEqual({
         yAxisMin: 0,
         yAxisMax: 500,

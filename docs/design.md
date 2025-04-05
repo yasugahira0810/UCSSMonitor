@@ -55,6 +55,9 @@
 ### GitHub ActionsのSecrets
 - UCSS_EMAIL: UCSSのログイン用メールアドレス
 - UCSS_PASSWORD: UCSSのログイン用パスワード
-- GH_PAT: Gist更新用のPersonal Access Token
+- GH_PAT: Gist更新用のPersonal Access Token。PAT生成時に付与する権限はGistのみでOK。
 - GIST_USER: 更新対象のGistファイルを保有するユーザ名
 - GIST_ID: 更新対象のGist
+
+## GitHub Pagesの設定
+- Build and deploymentのSourceはDeploy from a branch。Branchはgh-pagesの/(root)。

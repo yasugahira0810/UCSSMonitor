@@ -1,5 +1,11 @@
 # UCSSMonitor
 
+[![Version](https://img.shields.io/badge/version-v0.2.0-blue.svg)](https://github.com/yasugahira0810/UCSSMonitor)
+[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Tests](https://img.shields.io/badge/tests-passing-brightgreen.svg)](https://github.com/yasugahira0810/UCSSMonitor/actions)
+[![Node.js](https://img.shields.io/badge/node-%3E%3D%2018-green.svg)](https://nodejs.org)
+[![GitHub Actions Workflow Status](https://github.com/yasugahira0810/UCSSMonitor/actions/workflows/job.yml/badge.svg)](https://github.com/yasugahira0810/UCSSMonitor/actions/workflows/job.yml)
+
 UCSSMonitor is a tool that automatically monitors and visualizes the remaining data usage of the UCSS VPN service. It fetches data from the UCSS website, records it to GitHub Gist, and generates interactive charts to track usage over time.
 
 ## Features
