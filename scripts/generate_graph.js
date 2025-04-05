@@ -31,6 +31,11 @@ const TIMEZONE_MAP = {
 // データ取得と処理の主要関数
 async function fetchAndProcessData() {
   try {
+    // Validate environment variables
+    if (!process.env.GIST_USER || !process.env.GIST_ID) {
+      throw new Error('GIST_USER or GIST_ID environment variable is not defined');
+    }
+
     // Gistからデータを取得
     const gistUrl = `https://gist.github.com/${process.env.GIST_USER}/${process.env.GIST_ID}`;
     console.log(`Fetching Gist data from: ${gistUrl}`);
@@ -141,19 +146,54 @@ function formatDate(dateString, timezone) {
 
 // YYYY-MM-DDThh:mm形式へのフォーマット関数
 function formatDateForInput(date, timezone) {
-  const dateInTimezone = new Date(date.toLocaleString('en-US', { timeZone: timezone }));
-  
-  const year = dateInTimezone.getFullYear();
-  const month = String(dateInTimezone.getMonth() + 1).padStart(2, '0');
-  const day = String(dateInTimezone.getDate()).padStart(2, '0');
-  const hour = String(dateInTimezone.getHours()).padStart(2, '0');
-  const minute = String(dateInTimezone.getMinutes()).padStart(2, '0');
-  
-  return `${year}-${month}-${day}T${hour}:${minute}`;
+  // If date is passed as a string, convert it to a Date object
+  if (typeof date === 'string') {
+    date = new Date(date);
+  }
+
+  // Direct manual formatting to avoid timezone issues in tests
+  // This is more reliable than using toLocaleString which can cause issues in tests
+  try {
+    // Get date parts in the target timezone
+    const options = { timeZone: timezone };
+    const parts = new Intl.DateTimeFormat('en-US', {
+      ...options,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    }).formatToParts(date);
+
+    // Create a map of the parts
+    const mapped = {};
+    parts.forEach(part => {
+      if (part.type !== 'literal') {
+        mapped[part.type] = part.value;
+      }
+    });
+
+    // Format the string
+    return `${mapped.year}-${mapped.month}-${mapped.day}T${mapped.hour}:${mapped.minute}`;
+  } catch (error) {
+    // Fallback method if Intl methods fail
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hour = String(date.getHours()).padStart(2, '0');
+    const minute = String(date.getMinutes()).padStart(2, '0');
+    
+    return `${year}-${month}-${day}T${hour}:${minute}`;
+  }
 }
 
 // グラフデータの準備
 function prepareChartData(filteredData, timezone) {
+  if (!filteredData || filteredData.length === 0) {
+    throw new Error('No data available to prepare chart');
+  }
+
   // 時間スケール用データの準備
   const chartData = filteredData.map(item => ({
     x: new Date(item.date).getTime(),
@@ -813,7 +853,10 @@ function generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, ti
 }
 
 // メイン処理の実行
-fetchAndProcessData();
+// Only run in non-test environment
+if (process.env.NODE_ENV !== 'test') {
+  fetchAndProcessData();
+}
 
 // Export functions for testing purposes
 export {
@@ -822,5 +865,9 @@ export {
   filterHourlyData,
   getTimezoneInfo,
   prepareChartData,
-  calculateYAxisRange
+  calculateYAxisRange,
+  formatDate,
+  formatDateForInput,
+  generateAndSaveHtml,
+  processGitHubActions // Added explicit export for processGitHubActions
 };
