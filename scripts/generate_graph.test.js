@@ -349,6 +349,48 @@ describe('generate_graph.js', () => {
     });
   });
 
+  describe('prepareChartData null handling', () => {
+    it('should handle data with null remainingData values', () => {
+      // Create test data with null values
+      const filteredData = [
+        { date: '2023-01-01T00:00:00Z', remainingData: '10.5' },
+        { date: '2023-01-01T01:00:00Z', remainingData: null },
+        { date: '2023-01-01T02:00:00Z', remainingData: null },
+        { date: '2023-01-01T03:00:00Z', remainingData: '9.8' }
+      ];
+      const timezone = 'UTC';
+      
+      // Mock Date constructor
+      const originalDate = global.Date;
+      jest.spyOn(global, 'Date').mockImplementation((arg) => {
+        if (arg) {
+          return new originalDate(arg);
+        }
+        return new originalDate('2023-01-01T04:00:00Z');
+      });
+      
+      // Keep static methods
+      global.Date.now = originalDate.now;
+      global.Date.UTC = originalDate.UTC;
+      global.Date.parse = originalDate.parse;
+      
+      // Run the test
+      const result = prepareChartData(filteredData, timezone);
+      
+      // Test chart data - should only have 2 points (the non-null values)
+      expect(result.chartData).toHaveLength(2);
+      
+      // The first point should be the first item in the filtered data
+      expect(result.chartData[0].y).toBe(10.5);
+      
+      // The last point should be the last valid item
+      expect(result.chartData[1].y).toBe(9.8);
+      
+      // Clean up
+      jest.restoreAllMocks();
+    });
+  });
+
   // calculateYAxisRange のテスト
   describe('calculateYAxisRange', () => {
     it('should use default max when value is below first threshold', () => {

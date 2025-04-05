@@ -91,17 +91,46 @@ function processGitHubActions(data) {
 
 // 1時間ごとにデータをフィルタリング
 function filterHourlyData(data) {
+  // 空のデータ配列の場合は早期リターン
+  if (!data || data.length === 0) {
+    return [];
+  }
+
   const filteredData = [];
   let lastHour = null;
+  let lastDate = null;
   
-  data.forEach(item => {
+  // データを日付順にソート（念のため）
+  const sortedData = [...data].sort((a, b) => {
+    return new Date(a.date) - new Date(b.date);
+  });
+  
+  sortedData.forEach((item, index) => {
     const date = new Date(item.date);
     const currentHour = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}-${date.getHours()}`;
     
-    // 新しい時間またはデータの先頭の場合
+    // 新しい時間またはデータの先頭の場合は追加
     if (currentHour !== lastHour) {
       filteredData.push(item);
       lastHour = currentHour;
+      lastDate = date;
+    }
+    // 以下の場合はデータポイントを追加する:
+    // 1. 前回のデータポイントから2時間以上経過している場合
+    // 2. 現在または直前のデータポイントのいずれかにremainingDataがある場合
+    // これにより、nullの前後で線が適切に繋がるようになります
+    else if (lastDate && index > 0) {
+      const timeDiff = date - lastDate;
+      const hoursDiff = timeDiff / (1000 * 60 * 60);
+      const prevItem = sortedData[index - 1];
+      
+      if (hoursDiff >= 2 || 
+          (item.remainingData !== null && item.remainingData !== undefined) || 
+          (prevItem.remainingData === null || prevItem.remainingData === undefined)) {
+        filteredData.push(item);
+        lastHour = currentHour;
+        lastDate = date;
+      }
     }
   });
   
@@ -194,14 +223,28 @@ function prepareChartData(filteredData, timezone) {
     throw new Error('No data available to prepare chart');
   }
 
-  // 時間スケール用データの準備
-  const chartData = filteredData.map(item => ({
-    x: new Date(item.date).getTime(),
-    y: parseFloat(item.remainingData)
-  }));
+  // null値をフィルタリングして、有効なデータポイントのみをChartJSに渡す
+  // ただし、nullの値は配列からは除外せず、スキップする形でマッピングする
+  const chartData = [];
+  filteredData.forEach(item => {
+    // nullまたは定義されていない値はスキップするが、グラフは連続して描画される
+    if (item.remainingData !== null && item.remainingData !== undefined) {
+      chartData.push({
+        x: new Date(item.date).getTime(),
+        y: parseFloat(item.remainingData)
+      });
+    }
+  });
   
-  // Y軸設定の計算
-  const values = filteredData.map(item => parseFloat(item.remainingData));
+  // Y軸設定の計算（nullでない値のみで計算）
+  const values = filteredData
+    .filter(item => item.remainingData !== null && item.remainingData !== undefined)
+    .map(item => parseFloat(item.remainingData));
+  
+  if (values.length === 0) {
+    throw new Error('No valid data points available for chart preparation');
+  }
+  
   const maxValue = Math.max(...values);
   const yAxisSettings = calculateYAxisRange(maxValue);
   
