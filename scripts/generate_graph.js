@@ -275,6 +275,9 @@ function generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, ti
   const { firstDate, lastDate, currentDate, firstDateFormatted, currentDateFormatted } = dateInfo;
   const { yAxisMin, yAxisMax } = axisSettings;
   
+  // この値を実際のY軸設定から取得したものに置き換える
+  const defaultYAxisMax = yAxisMax;
+  
   const htmlContent = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -562,10 +565,10 @@ function generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, ti
         const lastTimestamp = ${lastDate.getTime()};
         const currentTimestamp = ${currentDate.getTime()};
         
-        // 定数値
+        // 定数値 - 動的に算出されたデフォルト最大値を使用
         const Y_AXIS_MAX_LIMIT = ${CONSTANTS.Y_AXIS.MAX_LIMIT};
         const Y_AXIS_DEFAULT_MIN = ${CONSTANTS.Y_AXIS.DEFAULT_MIN};
-        const Y_AXIS_DEFAULT_MAX = ${CONSTANTS.Y_AXIS.DEFAULT_MAX};
+        const Y_AXIS_DEFAULT_MAX = ${defaultYAxisMax}; // 固定値ではなく、データから計算された最大値を使用
         
         // スケール設定の初期値
         let chartSettings = {
