@@ -278,7 +278,7 @@ describe('generate_graph.js', () => {
       
       // Test axis settings
       expect(result.axisSettings.yAxisMin).toBe(0);
-      expect(result.axisSettings.yAxisMax).toBe(50);
+      expect(result.axisSettings.yAxisMax).toBe(100);
       
       // Test date info exists
       expect(result.dateInfo).toBeDefined();
@@ -443,7 +443,7 @@ describe('generate_graph.js', () => {
 
       expect(yAxisSettings).toEqual({
         yAxisMin: 0,
-        yAxisMax: 50,
+        yAxisMax: 100,
       });
     });
 
