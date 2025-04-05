@@ -541,6 +541,11 @@ function generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, ti
         const lastTimestamp = ${lastDate.getTime()};
         const currentTimestamp = ${currentDate.getTime()};
         
+        // 定数値
+        const Y_AXIS_MAX_LIMIT = ${CONSTANTS.Y_AXIS.MAX_LIMIT};
+        const Y_AXIS_DEFAULT_MIN = ${CONSTANTS.Y_AXIS.DEFAULT_MIN};
+        const Y_AXIS_DEFAULT_MAX = ${CONSTANTS.Y_AXIS.DEFAULT_MAX};
+        
         // スケール設定の初期値
         let chartSettings = {
             yMin: ${yAxisMin},
@@ -548,10 +553,6 @@ function generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, ti
             xMin: firstTimestamp,
             xMax: currentTimestamp  // 初期値を現在の時刻に設定
         };
-        // 定数値
-        const Y_AXIS_MAX_LIMIT = ${CONSTANTS.Y_AXIS.MAX_LIMIT};
-        const Y_AXIS_DEFAULT_MIN = ${CONSTANTS.Y_AXIS.DEFAULT_MIN};
-        const Y_AXIS_DEFAULT_MAX = ${CONSTANTS.Y_AXIS.DEFAULT_MAX};
         
         // グラフの初期化関数
         function initChart(settings) {
@@ -780,11 +781,25 @@ function generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, ti
             
             // 設定適用ボタン
             applyButton.addEventListener('click', function() {
-                const xMinDate = new Date(xMin.value);
-                const xMaxDate = new Date(xMax.value);
-                
-                chartSettings.xMin = xMinDate.getTime();
-                chartSettings.xMax = xMaxDate.getTime();
+                // 安全な方法で日時を取得
+                let xMinValue, xMaxValue;
+                try {
+                    xMinValue = new Date(xMin.value).getTime();
+                    xMaxValue = new Date(xMax.value).getTime();
+                    
+                    // NaNチェック
+                    if (isNaN(xMinValue) || isNaN(xMaxValue)) {
+                        alert('日付が正しく入力されていません。');
+                        return;
+                    }
+                    
+                    chartSettings.xMin = xMinValue;
+                    chartSettings.xMax = xMaxValue;
+                } catch (error) {
+                    console.error('日付解析エラー:', error);
+                    alert('日付形式が正しくありません。');
+                    return;
+                }
                 
                 // 入力値の検証
                 if (chartSettings.xMin >= chartSettings.xMax) {
@@ -802,6 +817,7 @@ function generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, ti
             
             // リセットボタン
             resetButton.addEventListener('click', function() {
+                // 初期値に戻す
                 xMin.value = '${firstDateFormatted}';
                 xMax.value = '${currentDateFormatted}';
                 yMinRange.value = Y_AXIS_DEFAULT_MIN;
@@ -832,11 +848,19 @@ function generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, ti
             const yMinInput = document.getElementById('y-min-input');
             const yMaxInput = document.getElementById('y-max-input');
             
+            // 初期値の数値を直接設定する（テンプレート変数の代わりに定数を使用）
+            const defaultYMin = Y_AXIS_DEFAULT_MIN;
+            const defaultYMax = Y_AXIS_DEFAULT_MAX;
+            
             // 初期値を明示的に設定
-            yMinRange.value = chartSettings.yMin;
-            yMaxRange.value = chartSettings.yMax;
-            yMinInput.value = chartSettings.yMin;
-            yMaxInput.value = chartSettings.yMax;
+            yMinRange.value = defaultYMin;
+            yMaxRange.value = defaultYMax;
+            yMinInput.value = defaultYMin;
+            yMaxInput.value = defaultYMax;
+            
+            // チャート設定も更新
+            chartSettings.yMin = defaultYMin;
+            chartSettings.yMax = defaultYMax;
             
             setupEventListeners();
             updateSelectedRange(); // 初期スライダー範囲を設定

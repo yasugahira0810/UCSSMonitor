@@ -545,6 +545,97 @@ describe('generate_graph.js', () => {
       
       expect(fsMock.writeFileSync).toHaveBeenCalled();
     });
+    
+    it('should display DEFAULT_MIN and DEFAULT_MAX as initial values for y-axis inputs', () => {
+      const chartData = [{ x: 1672531200000, y: 10.5 }];
+      const dateInfo = {
+        firstDate: { getTime: () => 1672531200000 },
+        lastDate: { getTime: () => 1672617600000 },
+        currentDate: { getTime: () => 1672704000000 },
+        firstDateFormatted: '2023-01-01T00:00',
+        lastDateFormatted: '2023-01-02T00:00',
+        currentDateFormatted: '2023-01-03T00:00'
+      };
+      const axisSettings = { yAxisMin: 0, yAxisMax: 50 }; // DEFAULT_MIN=0, DEFAULT_MAX=50
+      const filteredData = [{ date: '2023-01-01T00:00:00Z', remainingData: '10.5' }];
+      const timezone = 'UTC';
+      const timezoneDisplay = 'UTC+0';
+      
+      // HTMLの内容をキャプチャして検証
+      let htmlContent = '';
+      fsMock.writeFileSync.mockImplementation((path, content) => {
+        htmlContent = content;
+      });
+      
+      generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, timezone, timezoneDisplay);
+      
+      // y-min-inputの初期値を検証
+      expect(htmlContent).toContain('<input type="number" id="y-min-input" min="0" max="500" step="5" value="0">');
+      
+      // y-max-inputの初期値を検証
+      expect(htmlContent).toContain('<input type="number" id="y-max-input" min="0" max="500" step="5" value="50">');
+      
+      // スライダーの初期値も検証
+      expect(htmlContent).toContain('<input type="range" id="y-min-range" class="dual-slider" min="0" max="500" step="5" value="0">');
+      expect(htmlContent).toContain('<input type="range" id="y-max-range" class="dual-slider" min="0" max="500" step="5" value="50">');
+    });
+
+    it('should display DEFAULT_MIN as initial value for y-min-input', () => {
+      const chartData = [{ x: 1672531200000, y: 10.5 }];
+      const dateInfo = {
+        firstDate: { getTime: () => 1672531200000 },
+        lastDate: { getTime: () => 1672617600000 },
+        currentDate: { getTime: () => 1672704000000 },
+        firstDateFormatted: '2023-01-01T00:00',
+        lastDateFormatted: '2023-01-02T00:00',
+        currentDateFormatted: '2023-01-03T00:00'
+      };
+      const axisSettings = { yAxisMin: 0, yAxisMax: 50 }; // DEFAULT_MIN=0, DEFAULT_MAX=50
+      const filteredData = [{ date: '2023-01-01T00:00:00Z', remainingData: '10.5' }];
+      const timezone = 'UTC';
+      const timezoneDisplay = 'UTC+0';
+      
+      // HTMLの内容をキャプチャして検証
+      let htmlContent = '';
+      fsMock.writeFileSync.mockImplementation((path, content) => {
+        htmlContent = content;
+      });
+      
+      generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, timezone, timezoneDisplay);
+      
+      // y-min-inputの初期値を検証
+      expect(htmlContent).toContain('<input type="number" id="y-min-input" min="0" max="500" step="5" value="0">');
+    });
+    
+    it('should display DEFAULT_MAX as initial value for y-max-input', () => {
+      const chartData = [{ x: 1672531200000, y: 10.5 }];
+      const dateInfo = {
+        firstDate: { getTime: () => 1672531200000 },
+        lastDate: { getTime: () => 1672617600000 },
+        currentDate: { getTime: () => 1672704000000 },
+        firstDateFormatted: '2023-01-01T00:00',
+        lastDateFormatted: '2023-01-02T00:00',
+        currentDateFormatted: '2023-01-03T00:00'
+      };
+      const axisSettings = { yAxisMin: 0, yAxisMax: 50 };
+      const filteredData = [{ date: '2023-01-01T00:00:00Z', remainingData: '10.5' }];
+      const timezone = 'UTC';
+      const timezoneDisplay = 'UTC+0';
+      
+      // HTMLの内容をキャプチャして検証
+      let htmlContent = '';
+      fsMock.writeFileSync.mockImplementation((path, content) => {
+        htmlContent = content;
+      });
+      
+      generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, timezone, timezoneDisplay);
+      
+      // y-max-inputの初期値を検証
+      expect(htmlContent).toContain('<input type="number" id="y-max-input" min="0" max="500" step="5" value="50">');
+      
+      // スライダーの初期値も検証
+      expect(htmlContent).toContain('<input type="range" id="y-max-range" class="dual-slider" min="0" max="500" step="5" value="50">');
+    });
   });
   
   // fetchAndProcessData の統合テスト
