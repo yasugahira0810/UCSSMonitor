@@ -253,13 +253,15 @@ function prepareChartData(filteredData, timezone) {
 
 // Y軸の範囲を計算
 function calculateYAxisRange(maxValue) {
-  // テストケースでの期待値に合わせて、小さい値の場合のデフォルト値を100にする
+  // maxValueに基づいて最大値を計算（50GBごとに区切る）
   let yAxisMax = 50 * (Math.floor(maxValue / 50) + 1);
   
-  if (yAxisMax < 100) {
-    yAxisMax = 100;  // デフォルト値を50から100に変更
+  // 最大値が50より小さい場合は50を使用
+  if (yAxisMax < 50) {
+    yAxisMax = 50;
   }
   
+  // 最大値が上限を超えないようにする
   yAxisMax = Math.min(yAxisMax, CONSTANTS.Y_AXIS.MAX_LIMIT);
   
   return {
