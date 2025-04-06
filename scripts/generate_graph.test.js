@@ -76,6 +76,16 @@ describe('generate_graph.js', () => {
       const filteredData = filterHourlyData(inputData);
       expect(filteredData).toEqual([]);
     });
+
+    it('should handle null or undefined data', () => {
+      const inputData = null;
+      const filteredData = filterHourlyData(inputData);
+      expect(filteredData).toEqual([]);
+
+      const inputData2 = undefined;
+      const filteredData2 = filterHourlyData(inputData2);
+      expect(filteredData2).toEqual([]);
+    });
   });
 
   // getTimezoneInfo のテスト
@@ -152,10 +162,30 @@ describe('generate_graph.js', () => {
       // 東京時間は UTC+9 なので、日付が変わる
       expect(result).toMatch(/\d+\/\d+\s\d+:\d+/);
     });
+
+    it('should handle invalid date string', () => {
+      const dateString = 'invalid-date';
+      const timezone = 'UTC';
+      
+      // 無効な日付文字列でもエラーにならずに何らかの文字列を返すはず
+      const result = formatDate(dateString, timezone);
+      expect(typeof result).toBe('string');
+    });
   });
 
   // formatDateForInput のテスト
   describe('formatDateForInput', () => {
+    // テスト前に元のDate実装を保存
+    let originalDate;
+    beforeEach(() => {
+      originalDate = global.Date;
+    });
+    
+    // テスト後に元のDate実装を復元
+    afterEach(() => {
+      global.Date = originalDate;
+    });
+
     it('should format date for HTML datetime-local input with UTC timezone', () => {
       const date = new Date('2023-01-01T12:30:00Z');
       const timezone = 'UTC';
@@ -201,6 +231,66 @@ describe('generate_graph.js', () => {
       const result = formatDateForInput(date, timezone);
       
       expect(result).toBe('2023-02-03T04:05');
+    });
+
+    it('should use fallback method when Intl methods fail', () => {
+      // Intl.DateTimeFormat.formatToPartsが例外をスローするように設定
+      jest.spyOn(Intl, 'DateTimeFormat').mockImplementationOnce(() => ({
+        formatToParts: () => { throw new Error('Intl error'); }
+      }));
+
+      const date = new Date('2023-03-15T14:30:00Z');
+      const timezone = 'UTC';
+
+      // モックでDate.getFullYearなどを適切に返すように設定
+      const originalGetFullYear = Date.prototype.getFullYear;
+      const originalGetMonth = Date.prototype.getMonth;
+      const originalGetDate = Date.prototype.getDate;
+      const originalGetHours = Date.prototype.getHours;
+      const originalGetMinutes = Date.prototype.getMinutes;
+
+      Date.prototype.getFullYear = jest.fn().mockReturnValue(2023);
+      Date.prototype.getMonth = jest.fn().mockReturnValue(2); // 0-indexed, so 2 is March
+      Date.prototype.getDate = jest.fn().mockReturnValue(15);
+      Date.prototype.getHours = jest.fn().mockReturnValue(14);
+      Date.prototype.getMinutes = jest.fn().mockReturnValue(30);
+
+      try {
+        const result = formatDateForInput(date, timezone);
+        expect(result).toBe('2023-03-15T14:30');
+      } finally {
+        // オリジナルのメソッドを復元
+        Date.prototype.getFullYear = originalGetFullYear;
+        Date.prototype.getMonth = originalGetMonth;
+        Date.prototype.getDate = originalGetDate;
+        Date.prototype.getHours = originalGetHours;
+        Date.prototype.getMinutes = originalGetMinutes;
+      }
+    });
+
+    it('should handle date string input', () => {
+      // 正しいDate実装でモックする
+      global.Date = function(arg) {
+        if (arg === '2023-04-20T16:45:00Z') {
+          return {
+            getFullYear: () => 2023,
+            getMonth: () => 3,  // 0-indexed, 3 = April
+            getDate: () => 20,
+            getHours: () => 16,
+            getMinutes: () => 45
+          };
+        }
+        return new originalDate(arg);
+      };
+      // 静的メソッドをコピー
+      global.Date.now = originalDate.now;
+      
+      const dateString = '2023-04-20T16:45:00Z';
+      const timezone = 'UTC';
+      
+      const result = formatDateForInput(dateString, timezone);
+      
+      expect(result).toBe('2023-04-20T16:45');
     });
   });
 

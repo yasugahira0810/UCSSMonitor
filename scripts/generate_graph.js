@@ -187,13 +187,26 @@ function formatDateForInput(date, timezone) {
     return `${mapped.year}-${mapped.month}-${mapped.day}T${mapped.hour}:${mapped.minute}`;
   } catch (error) {
     // Fallback method if Intl methods fail
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const hour = String(date.getHours()).padStart(2, '0');
-    const minute = String(date.getMinutes()).padStart(2, '0');
-    
-    return `${year}-${month}-${day}T${hour}:${minute}`;
+    try {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const hour = String(date.getHours()).padStart(2, '0');
+      const minute = String(date.getMinutes()).padStart(2, '0');
+      
+      return `${year}-${month}-${day}T${hour}:${minute}`;
+    } catch (innerError) {
+      // 最終的なフォールバック: 不正な入力を受け取った場合は現在の日時を使用
+      console.error('Invalid date input:', date, innerError);
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      const hour = String(now.getHours()).padStart(2, '0');
+      const minute = String(now.getMinutes()).padStart(2, '0');
+      
+      return `${year}-${month}-${day}T${hour}:${minute}`;
+    }
   }
 }
 
@@ -278,6 +291,10 @@ function generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, ti
   // この値を実際のY軸設定から取得したものに置き換える
   const defaultYAxisMax = yAxisMax;
   
+  // 最新のデータ量を取得
+  const latestData = filteredData.length > 0 ? filteredData[filteredData.length - 1] : null;
+  const latestRemainingData = latestData ? parseFloat(latestData.remainingData).toFixed(1) : 'N/A';
+  
   const htmlContent = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -310,6 +327,13 @@ function generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, ti
             margin-top: 10px;
             color: #7f8c8d;
             font-size: 14px;
+        }
+        .latest-data {
+            text-align: center;
+            margin: 15px 0;
+            font-size: 18px;
+            font-weight: bold;
+            color: #2c3e50;
         }
         .controls-container {
             display: flex;
@@ -492,6 +516,10 @@ function generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, ti
 </head>
 <body>
     <h1 style="text-align: center;">UCSS Monitor</h1>
+    
+    <div class="latest-data">
+        現在の残りデータ量: ${latestRemainingData} GB
+    </div>
     
     <div class="chart-container">
         <canvas id="myChart"></canvas>
