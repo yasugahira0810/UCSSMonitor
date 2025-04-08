@@ -25,6 +25,7 @@
 - Gist(https://gist.github.com/(process.env.GIST_USER)/(process.env.GIST_ID))を、データ保存（Gist）のフォーマットに従って、更新
 - Gistの更新を契機に次のGitHub Actionsを動かして、横軸がdateで、縦軸がremainingDataの積み上げ折れ線グラフをChart.jsを使ってindex.htmlを生成
 - 再生成したグラフをpeaceiris/actions-gh-pages@v4を使って、GitHub Pagesへデプロイ
+- 残りデータ容量が増えたときには、（増えた時刻、残りデータ量）の地点から、（1ヶ月後の時刻、0GB）の地点まで、補助線を引く。これにより、ユーザは平均ペースに比べて早くデータ量を消費しているから使用を控えるか、データ量余る見込みだから、積極的に使うかを判断できる。
 
 ### セキュリティ：
 

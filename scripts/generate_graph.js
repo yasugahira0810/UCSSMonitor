@@ -53,10 +53,10 @@ async function fetchAndProcessData() {
     console.log(`Using timezone: ${timezone} (Display: ${timezoneDisplay})`);
     
     // グラフ描画のためにデータを準備
-    const { chartData, dateInfo, axisSettings } = prepareChartData(filteredData, timezone);
+    const { chartData, guidelineData, dateInfo, axisSettings, hasDataIncrease } = prepareChartData(filteredData, timezone);
     
     // HTMLコンテンツの作成と保存
-    generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, timezone, timezoneDisplay);
+    generateAndSaveHtml(chartData, guidelineData, dateInfo, axisSettings, filteredData, timezone, timezoneDisplay, hasDataIncrease);
   } catch (error) {
     console.error('Error occurred:', error.message);
     console.error('Stack trace:', error.stack);
@@ -219,15 +219,50 @@ function prepareChartData(filteredData, timezone) {
   // null値をフィルタリングして、有効なデータポイントのみをChartJSに渡す
   // ただし、nullの値は配列からは除外せず、スキップする形でマッピングする
   const chartData = [];
+  let guidelineData = []; // 補助線用のデータ配列
+  
+  // データの増加を検出するための変数
+  let lastValidValue = null;
+  let lastValidTimestamp = null;
+  let dataIncreasePoint = null;
+  
   filteredData.forEach(item => {
     // nullまたは定義されていない値はスキップするが、グラフは連続して描画される
     if (item.remainingData !== null && item.remainingData !== undefined) {
+      const timestamp = new Date(item.date).getTime();
+      const value = parseFloat(item.remainingData);
+      
       chartData.push({
-        x: new Date(item.date).getTime(),
-        y: parseFloat(item.remainingData)
+        x: timestamp,
+        y: value
       });
+      
+      // データの増加を検出
+      if (lastValidValue !== null && value > lastValidValue) {
+        // データ容量が増えたポイントを記録
+        dataIncreasePoint = {
+          timestamp: timestamp,
+          value: value
+        };
+      }
+      
+      lastValidValue = value;
+      lastValidTimestamp = timestamp;
     }
   });
+  
+  // データ容量増加時の補助線を作成
+  if (dataIncreasePoint) {
+    // 1ヶ月後の日時を計算
+    const oneMonthLater = new Date(dataIncreasePoint.timestamp);
+    oneMonthLater.setMonth(oneMonthLater.getMonth() + 1);
+    
+    // 補助線の始点と終点
+    guidelineData = [
+      { x: dataIncreasePoint.timestamp, y: dataIncreasePoint.value },
+      { x: oneMonthLater.getTime(), y: 0 } // 1ヶ月後に0GBになる直線
+    ];
+  }
   
   // Y軸設定の計算（nullでない値のみで計算）
   const values = filteredData
@@ -248,19 +283,27 @@ function prepareChartData(filteredData, timezone) {
   const lastDate = new Date(lastDataPoint.date);
   const currentDate = new Date();
   
+  // 現在から1ヶ月後の日時も計算
+  const oneMonthFromNow = new Date(currentDate);
+  oneMonthFromNow.setMonth(oneMonthFromNow.getMonth() + 1);
+  
   const dateInfo = {
     firstDate,
     lastDate,
     currentDate,
+    oneMonthFromNow,
     firstDateFormatted: formatDateForInput(firstDate, timezone),
     lastDateFormatted: formatDateForInput(lastDate, timezone),
-    currentDateFormatted: formatDateForInput(currentDate, timezone)
+    currentDateFormatted: formatDateForInput(currentDate, timezone),
+    oneMonthFromNowFormatted: formatDateForInput(oneMonthFromNow, timezone)
   };
   
   return {
     chartData,
+    guidelineData,
     dateInfo,
-    axisSettings: yAxisSettings
+    axisSettings: yAxisSettings,
+    hasDataIncrease: !!dataIncreasePoint
   };
 }
 
@@ -284,8 +327,8 @@ function calculateYAxisRange(maxValue) {
 }
 
 // HTMLファイルの生成と保存
-function generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, timezone, timezoneDisplay) {
-  const { firstDate, lastDate, currentDate, firstDateFormatted, currentDateFormatted } = dateInfo;
+function generateAndSaveHtml(chartData, guidelineData, dateInfo, axisSettings, filteredData, timezone, timezoneDisplay, hasDataIncrease) {
+  const { firstDate, lastDate, currentDate, oneMonthFromNow, firstDateFormatted, currentDateFormatted, oneMonthFromNowFormatted } = dateInfo;
   const { yAxisMin, yAxisMax } = axisSettings;
   
   // この値を実際のY軸設定から取得したものに置き換える
@@ -296,17 +339,17 @@ function generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, ti
   const latestRemainingData = latestData ? parseFloat(latestData.remainingData).toFixed(1) : 'N/A';
   
   const htmlContent = `<!DOCTYPE html>
-<html lang="en">
+<html lang="ja">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UCSS Monitor Chart</title>
+    <title>UCSS モニター グラフ</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/date-fns@2.29.3/index.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@2.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: Arial, sans-serif, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo;
             margin: 20px;
             max-width: 1200px;
             margin: 0 auto;
@@ -513,6 +556,18 @@ function generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, ti
             margin-right: 5px;
             font-weight: normal;
         }
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            margin-top: 10px;
+        }
+        .checkbox-container input[type="checkbox"] {
+            margin-right: 8px;
+        }
+        .checkbox-container label {
+            display: inline;
+            font-weight: normal;
+        }
     </style>
 </head>
 <body>
@@ -574,6 +629,10 @@ function generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, ti
                     <input type="datetime-local" id="x-max" value="${currentDateFormatted}" min="${firstDateFormatted}" max="${currentDateFormatted}">
                 </div>
             </div>
+            <div class="checkbox-container">
+                <input type="checkbox" id="show-future" name="show-future">
+                <label for="show-future">1ヶ月先まで表示する（補助線のみ表示）</label>
+            </div>
         </div>
         
         <div class="buttons-group">
@@ -586,13 +645,16 @@ function generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, ti
         let myChart;
         const ctx = document.getElementById('myChart').getContext('2d');
         const chartData = ${JSON.stringify(chartData)};
+        const guidelineData = ${JSON.stringify(guidelineData)};
         const timezone = '${timezone}';
         const timezoneDisplay = '${timezoneDisplay}';
+        const hasDataIncrease = ${hasDataIncrease};
         
         // 最初のデータポイントと現在の日時のタイムスタンプ
         const firstTimestamp = ${firstDate.getTime()};
         const lastTimestamp = ${lastDate.getTime()};
         const currentTimestamp = ${currentDate.getTime()};
+        const oneMonthFromNowTimestamp = ${oneMonthFromNow.getTime()};
         
         // 定数値 - 動的に算出されたデフォルト最大値を使用
         const Y_AXIS_MAX_LIMIT = ${CONSTANTS.Y_AXIS.MAX_LIMIT};
@@ -604,7 +666,8 @@ function generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, ti
             yMin: ${yAxisMin},
             yMax: ${yAxisMax},
             xMin: firstTimestamp,
-            xMax: currentTimestamp  // 初期値を現在の時刻に設定
+            xMax: currentTimestamp,  // 初期値を現在の時刻に設定
+            showFuture: false
         };
         
         // グラフの初期化関数
@@ -612,6 +675,9 @@ function generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, ti
             if (myChart) {
                 myChart.destroy();
             }
+            
+            // 「1ヶ月先まで表示する」が選択されている場合は終了日時を調整
+            const xMaxValue = settings.showFuture ? oneMonthFromNowTimestamp : settings.xMax;
             
             myChart = new Chart(ctx, {
                 type: 'line',
@@ -627,6 +693,19 @@ function generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, ti
                             fill: true,
                             pointRadius: 3,
                             pointHoverRadius: 5
+                        },
+                        {
+                            label: 'データ容量増加時の補助線',
+                            data: guidelineData,
+                            borderColor: 'rgba(255, 99, 132, 1)',
+                            backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                            borderWidth: 2,
+                            tension: 0.1,
+                            fill: false,
+                            pointRadius: 0,
+                            pointHoverRadius: 0,
+                            borderDash: [5, 5],
+                            hidden: !hasDataIncrease  // データ容量増加がない場合は非表示
                         }
                     ]
                 },
@@ -676,7 +755,7 @@ function generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, ti
                         x: {
                             type: 'time',
                             min: settings.xMin,
-                            max: settings.xMax,
+                            max: xMaxValue,
                             time: {
                                 unit: 'hour',
                                 displayFormats: {
@@ -717,6 +796,23 @@ function generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, ti
             selectedRange.style.width = (maxPercent - minPercent) + '%';
         }
         
+        // 1ヶ月先まで表示チェックボックスの状態に応じて、終了日時の入力フィールドの有効/無効を切り替え
+        function updateXMaxInputState() {
+            const showFuture = document.getElementById('show-future').checked;
+            const xMaxInput = document.getElementById('x-max');
+            
+            if (showFuture) {
+                // 1ヶ月先まで表示が選択された場合、終了日時の入力を無効化
+                xMaxInput.disabled = true;
+                // 1ヶ月後の日時を設定
+                chartSettings.showFuture = true;
+            } else {
+                // 通常表示の場合、終了日時の入力を有効化
+                xMaxInput.disabled = false;
+                chartSettings.showFuture = false;
+            }
+        }
+        
         // UIイベントリスナー設定
         function setupEventListeners() {
             const xMin = document.getElementById('x-min');
@@ -727,6 +823,12 @@ function generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, ti
             const yMaxInput = document.getElementById('y-max-input');
             const applyButton = document.getElementById('apply-settings');
             const resetButton = document.getElementById('reset-settings');
+            const showFutureCheckbox = document.getElementById('show-future');
+            
+            // 1ヶ月先まで表示チェックボックスの変更イベント
+            showFutureCheckbox.addEventListener('change', function() {
+                updateXMaxInputState();
+            });
             
             // Y軸の最小値スライダーの更新時
             yMinRange.addEventListener('input', function() {
@@ -835,19 +937,30 @@ function generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, ti
             // 設定適用ボタン
             applyButton.addEventListener('click', function() {
                 // 安全な方法で日時を取得
-                let xMinValue, xMaxValue;
+                let xMinValue;
                 try {
                     xMinValue = new Date(xMin.value).getTime();
-                    xMaxValue = new Date(xMax.value).getTime();
+                    
+                    // 1ヶ月先まで表示が選択されていない場合は終了日時も取得
+                    if (!chartSettings.showFuture) {
+                        let xMaxValue = new Date(xMax.value).getTime();
+                        
+                        // NaNチェック
+                        if (isNaN(xMaxValue)) {
+                            alert('終了日時が正しく入力されていません。');
+                            return;
+                        }
+                        
+                        chartSettings.xMax = xMaxValue;
+                    }
                     
                     // NaNチェック
-                    if (isNaN(xMinValue) || isNaN(xMaxValue)) {
-                        alert('日付が正しく入力されていません。');
+                    if (isNaN(xMinValue)) {
+                        alert('開始日時が正しく入力されていません。');
                         return;
                     }
                     
                     chartSettings.xMin = xMinValue;
-                    chartSettings.xMax = xMaxValue;
                 } catch (error) {
                     console.error('日付解析エラー:', error);
                     alert('日付形式が正しくありません。');
@@ -855,7 +968,7 @@ function generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, ti
                 }
                 
                 // 入力値の検証
-                if (chartSettings.xMin >= chartSettings.xMax) {
+                if (!chartSettings.showFuture && chartSettings.xMin >= chartSettings.xMax) {
                     alert('開始日時は終了日時より前にしてください');
                     return;
                 }
@@ -873,6 +986,8 @@ function generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, ti
                 // 初期値に戻す
                 xMin.value = '${firstDateFormatted}';
                 xMax.value = '${currentDateFormatted}';
+                xMax.disabled = false;
+                showFutureCheckbox.checked = false;
                 yMinRange.value = Y_AXIS_DEFAULT_MIN;
                 yMaxRange.value = Y_AXIS_DEFAULT_MAX;
                 yMinInput.value = Y_AXIS_DEFAULT_MIN;
@@ -882,7 +997,8 @@ function generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, ti
                     yMin: Y_AXIS_DEFAULT_MIN,
                     yMax: Y_AXIS_DEFAULT_MAX,
                     xMin: firstTimestamp,
-                    xMax: currentTimestamp
+                    xMax: currentTimestamp,
+                    showFuture: false
                 };
                 
                 updateSelectedRange();
@@ -891,6 +1007,7 @@ function generateAndSaveHtml(chartData, dateInfo, axisSettings, filteredData, ti
             
             // 初期化時にも選択範囲を表示
             updateSelectedRange();
+            updateXMaxInputState();
         }
         
         // DOMロード時の初期化
