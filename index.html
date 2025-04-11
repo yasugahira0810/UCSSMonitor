@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UCSS モニター グラフ</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/date-fns@2.29.3/index.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@2.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo;
+            margin: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .chart-container {
+            position: relative;
+            height: 60vh;
+            width: 100%;
+        }
+        .updated-time {
+            text-align: center;
+            margin-top: 20px;
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+        .timezone-info {
+            text-align: center;
+            margin-top: 10px;
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+        .latest-data {
+            text-align: center;
+            margin: 15px 0;
+            font-size: 18px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .controls-container {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .control-group {
+            flex: 1;
+            min-width: 250px;
+            margin: 10px;
+        }
+        .control-item {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="range"] {
+            width: 100%;
+        }
+        .range-slider {
+            position: relative;
+            margin-top: 30px;
+            margin-bottom: 40px;
+        }
+        .dual-slider-container {
+            position: relative;
+            width: 100%;
+            height: 40px;
+            margin-top: 20px;
+        }
+        .range-track {
+            position: absolute;
+            width: 100%;
+            height: 5px;
+            background-color: #ddd;
+            top: 50%;
+            transform: translateY(-50%);
+            border-radius: 3px;
+            z-index: 1;
+        }
+        .range-selected {
+            position: absolute;
+            height: 5px;
+            background-color: rgba(75, 192, 192, 0.8);
+            top: 50%;
+            transform: translateY(-50%);
+            border-radius: 3px;
+            z-index: 2;
+        }
+        input[type="range"].dual-slider {
+            position: absolute;
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            background: transparent;
+            top: 0;
+            height: 40px;
+            margin: 0;
+            pointer-events: none; /* デフォルトではイベントを無効に */
+        }
+        input[type="range"].dual-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            cursor: pointer;
+            margin-top: -7px;
+            pointer-events: auto; /* つまみのイベントのみ有効に */
+            z-index: 5;
+        }
+        input[type="range"].dual-slider::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            cursor: pointer;
+            pointer-events: auto; /* つまみのイベントのみ有効に */
+            z-index: 5;
+            border: none;
+        }
+        #y-min-range::-webkit-slider-thumb {
+            background: #2196F3;
+        }
+        #y-max-range::-webkit-slider-thumb {
+            background: #4CAF50;
+        }
+        #y-min-range::-moz-range-thumb {
+            background: #2196F3;
+        }
+        #y-max-range::-moz-range-thumb {
+            background: #4CAF50;
+        }
+        .range-values {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+        }
+        input[type="number"] {
+            width: 60px;
+            padding: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        input[type="datetime-local"] {
+            padding: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 180px;
+        }
+        select {
+            padding: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .value-display {
+            display: inline-block;
+            margin-left: 10px;
+            font-size: 14px;
+            color: #555;
+        }
+        button {
+            padding: 8px 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 10px;
+            margin-right: 10px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        button#reset-settings {
+            background-color: #7f8c8d;
+        }
+        button#reset-settings:hover {
+            background-color: #6c7a7a;
+        }
+        .datetime-controls {
+            display: flex;
+            justify-content: space-between;
+        }
+        .datetime-control-item {
+            flex: 1;
+            margin-right: 10px;
+        }
+        .datetime-control-item:last-child {
+            margin-right: 0;
+        }
+        .buttons-group {
+            display: flex;
+            justify-content: center;
+            margin-top: 15px;
+            width: 100%;
+        }
+        .y-axis-inputs {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            align-items: center;
+        }
+        .y-axis-input-group {
+            display: flex;
+            align-items: center;
+        }
+        .y-axis-input-group label {
+            margin-right: 5px;
+            font-weight: normal;
+        }
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            margin-top: 10px;
+        }
+        .checkbox-container input[type="checkbox"] {
+            margin-right: 8px;
+        }
+        .checkbox-container label {
+            display: inline;
+            font-weight: normal;
+        }
+    </style>
+</head>
+<body>
+    <h1 style="text-align: center;">UCSS Monitor</h1>
+    
+    <div class="latest-data">
+        現在の残りデータ量: 89.7 GB
+    </div>
+    
+    <div class="chart-container">
+        <canvas id="myChart"></canvas>
+    </div>
+    
+    <div class="updated-time">
+        最終更新: 2025/4/12 4:02:19
+        (データポイント数: 227)
+    </div>
+    <div class="timezone-info">
+        タイムゾーン: UTC+8
+    </div>
+    
+    <div class="controls-container">
+        <div class="control-group">
+            <h3>縦軸の設定</h3>
+            <div class="control-item">
+                <label for="y-min-range">データ量範囲</label>
+                <div class="dual-slider-container">
+                    <div class="range-track"></div>
+                    <div id="range-selected" class="range-selected"></div>
+                    <input type="range" id="y-min-range" class="dual-slider" min="0" max="500" step="5" value="0">
+                    <input type="range" id="y-max-range" class="dual-slider" min="0" max="500" step="5" value="150">
+                </div>
+                <div class="range-values">
+                    <span>0</span>
+                    <span>500</span>
+                </div>
+                <div class="y-axis-inputs">
+                    <div class="y-axis-input-group">
+                        <label for="y-min-input">最小値:</label>
+                        <input type="number" id="y-min-input" min="0" max="500" step="5" value="0">
+                    </div>
+                    <div class="y-axis-input-group">
+                        <label for="y-max-input">最大値:</label>
+                        <input type="number" id="y-max-input" min="0" max="500" step="5" value="150">
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="control-group">
+            <h3>横軸の設定</h3>
+            <div class="datetime-controls">
+                <div class="datetime-control-item">
+                    <label for="x-min">開始日時 (UTC+8)</label>
+                    <input type="datetime-local" id="x-min" value="2025-04-02T01:17" min="2025-04-02T01:17" max="2025-04-12T04:02">
+                </div>
+                <div class="datetime-control-item">
+                    <label for="x-max">終了日時 (UTC+8)</label>
+                    <input type="datetime-local" id="x-max" value="2025-04-12T04:02" min="2025-04-02T01:17" max="2025-04-12T04:02">
+                </div>
+            </div>
+            <div class="checkbox-container">
+                <input type="checkbox" id="show-future" name="show-future">
+                <label for="show-future">1ヶ月先まで表示する（補助線のみ表示）</label>
+            </div>
+        </div>
+        
+        <div class="buttons-group">
+            <button id="apply-settings">設定を適用</button>
+            <button id="reset-settings">リセット</button>
+        </div>
+    </div>
+    
+    <script>
+        let myChart;
+        const ctx = document.getElementById('myChart').getContext('2d');
+        const chartData = [{"x":1743527834272,"y":16.4},{"x":1743554293963,"y":15.5},{"x":1743560377632,"y":15.5},{"x":1743564313857,"y":15.4},{"x":1743567007908,"y":15.4},{"x":1743570071909,"y":15.4},{"x":1743573664514,"y":15.4},{"x":1743577742688,"y":15.4},{"x":1743580882034,"y":15.3},{"x":1743584476721,"y":15.3},{"x":1743588086677,"y":15.3},{"x":1743591667624,"y":15.3},{"x":1743596060461,"y":15.1},{"x":1743599654658,"y":14.6},{"x":1743602451587,"y":14.5},{"x":1743606074844,"y":14.3},{"x":1743609676139,"y":14.2},{"x":1743613268827,"y":14.1},{"x":1743617474385,"y":13.9},{"x":1743620460484,"y":13.9},{"x":1743624079845,"y":13.9},{"x":1743627672079,"y":13.8},{"x":1743631259336,"y":13.8},{"x":1743634858146,"y":13.8},{"x":1743638771930,"y":13.7},{"x":1743646714801,"y":13.5},{"x":1743650684417,"y":13.5},{"x":1743652886136,"y":13.5},{"x":1743656469574,"y":13.5},{"x":1743660716379,"y":13.5},{"x":1743664120276,"y":13.5},{"x":1743667265854,"y":13.5},{"x":1743670881057,"y":13.5},{"x":1743674493712,"y":13.4},{"x":1743678080129,"y":13.4},{"x":1743682467672,"y":13.4},{"x":1743686370278,"y":13.4},{"x":1743688890052,"y":13.3},{"x":1743692468315,"y":13.3},{"x":1743696090275,"y":13.3},{"x":1743699670430,"y":13.3},{"x":1743703864869,"y":11.2},{"x":1743706871356,"y":11.1},{"x":1743710465152,"y":11.1},{"x":1743714082956,"y":11},{"x":1743717663598,"y":11},{"x":1743721265074,"y":10.8},{"x":1743727049120,"y":10.8},{"x":1743729272278,"y":10.7},{"x":1743732179785,"y":10.7},{"x":1743737046249,"y":10.6},{"x":1743739262323,"y":10.6},{"x":1743742871235,"y":10.6},{"x":1743747101415,"y":10.6},{"x":1743750059575,"y":10.5},{"x":1743753676167,"y":10.2},{"x":1743758924464,"y":10.1},{"x":1743760879854,"y":10.1},{"x":1743764476137,"y":9.9},{"x":1743768327197,"y":9.8},{"x":1743772101800,"y":9.8},{"x":1743775261528,"y":9.8},{"x":1743781212396,"y":9.2},{"x":1743782516805,"y":9},{"x":1743790280991,"y":8.5},{"x":1743793309488,"y":8.2},{"x":1743796900302,"y":8.2},{"x":1743800498588,"y":8.2},{"x":1743807698826,"y":8.1},{"x":1743813035366,"y":8},{"x":1743817302218,"y":7.3},{"x":1743819393107,"y":7.1},{"x":1743823365846,"y":6.5},{"x":1743825705216,"y":6.4},{"x":1743829311231,"y":6.3},{"x":1743832899192,"y":6.3},{"x":1743836485543,"y":6.2},{"x":1743840607456,"y":6.1},{"x":1743843718046,"y":6.1},{"x":1743847298741,"y":6.1},{"x":1743850903049,"y":5.9},{"x":1743855177295,"y":5.8},{"x":1743858900017,"y":5.8},{"x":1743861698424,"y":5.8},{"x":1743865300713,"y":5.8},{"x":1743868893048,"y":5.8},{"x":1743872497321,"y":5.7},{"x":1743876111287,"y":5.2},{"x":1743879688562,"y":5.1},{"x":1743883301161,"y":5.1},{"x":1743886904860,"y":5.1},{"x":1743890503306,"y":5.1},{"x":1743894111385,"y":5.1},{"x":1743900091528,"y":4.6},{"x":1743906238612,"y":4.5},{"x":1743910060700,"y":4.5},{"x":1743912583702,"y":4.5},{"x":1743915688986,"y":4.4},{"x":1743919884774,"y":4.4},{"x":1743922919097,"y":4.4},{"x":1743926494622,"y":4.4},{"x":1743930109200,"y":4.3},{"x":1743933708745,"y":4.2},{"x":1743937292846,"y":4.1},{"x":1743940893113,"y":4.1},{"x":1743945339265,"y":2.9},{"x":1743948112164,"y":2.7},{"x":1743951702486,"y":2.4},{"x":1743955328016,"y":2},{"x":1743958943230,"y":1.7},{"x":1743963005264,"y":1.2},{"x":1743966098297,"y":1.2},{"x":1743969693422,"y":1.1},{"x":1743973308292,"y":100},{"x":1743976896001,"y":100},{"x":1743980493448,"y":100},{"x":1743986400674,"y":99.9},{"x":1743992570777,"y":99.9},{"x":1743996543638,"y":99.9},{"x":1743999066340,"y":99.9},{"x":1744002112608,"y":99.9},{"x":1744005694767,"y":99.9},{"x":1744009330193,"y":99.8},{"x":1744012900790,"y":99.8},{"x":1744016511356,"y":99.8},{"x":1744020114322,"y":99.8},{"x":1744023696265,"y":99.8},{"x":1744028121709,"y":99.8},{"x":1744032056838,"y":99.8},{"x":1744034504655,"y":99.7},{"x":1744038103154,"y":99.7},{"x":1744041717408,"y":99.7},{"x":1744045302861,"y":99.7},{"x":1744049516286,"y":99.2},{"x":1744052497162,"y":99.1},{"x":1744056115828,"y":99.1},{"x":1744059704459,"y":99.1},{"x":1744063319198,"y":99.1},{"x":1744066937917,"y":99.1},{"x":1744072695629,"y":99},{"x":1744078787342,"y":99},{"x":1744082744042,"y":99},{"x":1744084905528,"y":99},{"x":1744088512035,"y":99},{"x":1744092107027,"y":99},{"x":1744095699092,"y":99},{"x":1744099294648,"y":99},{"x":1744102909730,"y":99},{"x":1744106482778,"y":99},{"x":1744110112382,"y":99},{"x":1744114538244,"y":99},{"x":1744118453798,"y":98.6},{"x":1744120907096,"y":98.6},{"x":1744124527125,"y":97.9},{"x":1744128098636,"y":97},{"x":1744131736291,"y":96.8},{"x":1744135314570,"y":96.5},{"x":1744138907270,"y":96.5},{"x":1744142501782,"y":96.5},{"x":1744149678979,"y":96.5},{"x":1744153291961,"y":96.5},{"x":1744159107435,"y":96.4},{"x":1744165255749,"y":96.4},{"x":1744169173552,"y":96.4},{"x":1744171316395,"y":96.4},{"x":1744174913933,"y":96.4},{"x":1744179155859,"y":96.4},{"x":1744182100823,"y":96.4},{"x":1744186352716,"y":96.4},{"x":1744189314440,"y":96.4},{"x":1744192926406,"y":96.4},{"x":1744196528413,"y":96.1},{"x":1744200890461,"y":95.5},{"x":1744204928918,"y":95},{"x":1744207328972,"y":94.6},{"x":1744210952115,"y":94.3},{"x":1744214500501,"y":93.6},{"x":1744218114694,"y":92.3},{"x":1744222316720,"y":92.3},{"x":1744225315881,"y":92.3},{"x":1744228899187,"y":92.3},{"x":1744232497976,"y":92.3},{"x":1744236109650,"y":92.3},{"x":1744239691974,"y":92.3},{"x":1744245501657,"y":92.2},{"x":1744251586524,"y":92.2},{"x":1744255615347,"y":92.2},{"x":1744257715823,"y":92.2},{"x":1744261309539,"y":92.2},{"x":1744265547586,"y":92.2},{"x":1744268503093,"y":92.2},{"x":1744272096338,"y":92.2},{"x":1744275693262,"y":92.2},{"x":1744279313025,"y":92.2},{"x":1744282897992,"y":92.2},{"x":1744286505154,"y":92.2},{"x":1744291215724,"y":92.2},{"x":1744293709785,"y":91.8},{"x":1744297310578,"y":91.4},{"x":1744300917908,"y":90.7},{"x":1744304515425,"y":90.3},{"x":1744308720129,"y":90.3},{"x":1744311696472,"y":90.2},{"x":1744315297628,"y":90.2},{"x":1744318901900,"y":90.2},{"x":1744322507879,"y":90.2},{"x":1744326107599,"y":90.2},{"x":1744338042152,"y":90.1},{"x":1744342008414,"y":90.1},{"x":1744344107929,"y":90.1},{"x":1744347705252,"y":90.1},{"x":1744351939039,"y":90.1},{"x":1744354900063,"y":90.1},{"x":1744358500191,"y":90.1},{"x":1744362116714,"y":90.1},{"x":1744365695869,"y":90.1},{"x":1744369305947,"y":90.1},{"x":1744373713657,"y":90.1},{"x":1744377577570,"y":90.1},{"x":1744380113007,"y":90.1},{"x":1744384146957,"y":90.1},{"x":1744387831564,"y":89.8},{"x":1744390911222,"y":89.7},{"x":1744394515223,"y":89.7},{"x":1744398128585,"y":89.7},{"x":1744401715060,"y":89.7}];
+        const guidelineData = [{"x":1743973308292,"y":100},{"x":1746565308292,"y":0}];
+        const timezone = 'Etc/GMT-8';
+        const timezoneDisplay = 'UTC+8';
+        const hasDataIncrease = true;
+        
+        // 最初のデータポイントと現在の日時のタイムスタンプ
+        const firstTimestamp = 1743527834272;
+        const lastTimestamp = 1744401715060;
+        const currentTimestamp = 1744401739570;
+        const oneMonthFromNowTimestamp = 1746993739570;
+        
+        // 定数値 - 動的に算出されたデフォルト最大値を使用
+        const Y_AXIS_MAX_LIMIT = 500;
+        const Y_AXIS_DEFAULT_MIN = 0;
+        const Y_AXIS_DEFAULT_MAX = 150; // 固定値ではなく、データから計算された最大値を使用
+        
+        // スケール設定の初期値
+        let chartSettings = {
+            yMin: 0,
+            yMax: 150,
+            xMin: firstTimestamp,
+            xMax: currentTimestamp,  // 初期値を現在の時刻に設定
+            showFuture: false
+        };
+        
+        // グラフの初期化関数
+        function initChart(settings) {
+            if (myChart) {
+                myChart.destroy();
+            }
+            
+            // 「1ヶ月先まで表示する」が選択されている場合は終了日時を調整
+            const xMaxValue = settings.showFuture ? oneMonthFromNowTimestamp : settings.xMax;
+            
+            myChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    datasets: [
+                        {
+                            label: '残りデータ量 (GB)',
+                            data: chartData,
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                            borderWidth: 2,
+                            tension: 0.1,
+                            fill: true,
+                            pointRadius: 3,
+                            pointHoverRadius: 5
+                        },
+                        {
+                            label: 'データ容量増加時の補助線',
+                            data: guidelineData,
+                            borderColor: 'rgba(255, 99, 132, 1)',
+                            backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                            borderWidth: 2,
+                            tension: 0.1,
+                            fill: false,
+                            pointRadius: 0,
+                            pointHoverRadius: 0,
+                            borderDash: [5, 5],
+                            hidden: !hasDataIncrease  // データ容量増加がない場合は非表示
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        title: {
+                            display: false,
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return "残りデータ量: " + context.parsed.y.toFixed(2) + " GB";
+                                },
+                                title: function(tooltipItems) {
+                                    const date = new Date(tooltipItems[0].parsed.x);
+                                    return date.toLocaleString('ja-JP', {
+                                        year: 'numeric',
+                                        month: 'numeric',
+                                        day: 'numeric',
+                                        hour: '2-digit',
+                                        minute: '2-digit',
+                                        timeZone: timezone
+                                    });
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            min: settings.yMin,
+                            max: settings.yMax,
+                            title: {
+                                display: true,
+                                text: '残りデータ量 (GB)'
+                            },
+                            ticks: {
+                                callback: function(value) {
+                                    return value.toFixed(1);
+                                }
+                            }
+                        },
+                        x: {
+                            type: 'time',
+                            min: settings.xMin,
+                            max: xMaxValue,
+                            time: {
+                                unit: 'hour',
+                                displayFormats: {
+                                    hour: 'MM/dd HH:mm'
+                                },
+                                tooltipFormat: 'yyyy/MM/dd HH:mm'
+                            },
+                            title: {
+                                display: true,
+                                text: 'Date/Time (' + timezoneDisplay + ')'
+                            },
+                            ticks: {
+                                maxRotation: 45,
+                                minRotation: 45
+                            },
+                            adapters: {
+                                date: {
+                                    zone: timezone
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // スライダーのレンジビジュアルを更新する
+        function updateSelectedRange() {
+            const minRange = document.getElementById('y-min-range');
+            const maxRange = document.getElementById('y-max-range');
+            const selectedRange = document.getElementById('range-selected');
+            
+            const rangeMax = parseInt(minRange.max);
+            const minPercent = (parseInt(minRange.value) / rangeMax) * 100;
+            const maxPercent = (parseInt(maxRange.value) / rangeMax) * 100;
+            
+            selectedRange.style.left = minPercent + '%';
+            selectedRange.style.width = (maxPercent - minPercent) + '%';
+        }
+        
+        // 1ヶ月先まで表示チェックボックスの状態に応じて、終了日時の入力フィールドの有効/無効を切り替え
+        function updateXMaxInputState() {
+            const showFuture = document.getElementById('show-future').checked;
+            const xMaxInput = document.getElementById('x-max');
+            
+            if (showFuture) {
+                // 1ヶ月先まで表示が選択された場合、終了日時の入力を無効化
+                xMaxInput.disabled = true;
+                // 1ヶ月後の日時を設定
+                chartSettings.showFuture = true;
+            } else {
+                // 通常表示の場合、終了日時の入力を有効化
+                xMaxInput.disabled = false;
+                chartSettings.showFuture = false;
+            }
+        }
+        
+        // UIイベントリスナー設定
+        function setupEventListeners() {
+            const xMin = document.getElementById('x-min');
+            const xMax = document.getElementById('x-max');
+            const yMinRange = document.getElementById('y-min-range');
+            const yMaxRange = document.getElementById('y-max-range');
+            const yMinInput = document.getElementById('y-min-input');
+            const yMaxInput = document.getElementById('y-max-input');
+            const applyButton = document.getElementById('apply-settings');
+            const resetButton = document.getElementById('reset-settings');
+            const showFutureCheckbox = document.getElementById('show-future');
+            
+            // 1ヶ月先まで表示チェックボックスの変更イベント
+            showFutureCheckbox.addEventListener('change', function() {
+                updateXMaxInputState();
+            });
+            
+            // Y軸の最小値スライダーの更新時
+            yMinRange.addEventListener('input', function() {
+                let minValue = parseInt(this.value);
+                const maxValue = parseInt(yMaxRange.value);
+                
+                // 最小値と最大値の制約
+                if (minValue < 0) minValue = 0;
+                if (minValue > Y_AXIS_MAX_LIMIT) minValue = Y_AXIS_MAX_LIMIT;
+                
+                // 最小値が最大値を超えないようにする
+                if (minValue >= maxValue) {
+                    minValue = maxValue;
+                }
+                
+                this.value = minValue;
+                chartSettings.yMin = minValue;
+                
+                // 数値入力フィールドも更新
+                yMinInput.value = minValue;
+                updateSelectedRange();
+            });
+            
+            // Y軸の最大値スライダーの更新時
+            yMaxRange.addEventListener('input', function() {
+                let maxValue = parseInt(this.value);
+                const minValue = parseInt(yMinRange.value);
+                
+                // 最小値と最大値の制約
+                if (maxValue < 0) maxValue = 0;
+                if (maxValue > Y_AXIS_MAX_LIMIT) maxValue = Y_AXIS_MAX_LIMIT;
+                
+                // 最大値が最小値を下回らないようにする
+                if (maxValue <= minValue) {
+                    maxValue = minValue + 5; // 最小でも5の差をつける
+                    if (maxValue > Y_AXIS_MAX_LIMIT) {
+                        maxValue = Y_AXIS_MAX_LIMIT;
+                        // 最大値が上限に達した場合は最小値を調整
+                        yMinRange.value = maxValue - 5;
+                        yMinInput.value = maxValue - 5;
+                        chartSettings.yMin = maxValue - 5;
+                    }
+                }
+                
+                this.value = maxValue;
+                chartSettings.yMax = maxValue;
+                
+                // 数値入力フィールドも更新
+                yMaxInput.value = maxValue;
+                updateSelectedRange();
+            });
+            
+            // Y軸の最小値入力フィールドの更新時
+            yMinInput.addEventListener('input', function() {
+                let minValue = parseInt(this.value);
+                const maxValue = parseInt(yMaxInput.value);
+                
+                // 空の入力や不正な値の場合は処理しない
+                if (isNaN(minValue)) return;
+                
+                // 最小値と最大値の制約
+                if (minValue < 0) minValue = 0;
+                if (minValue > Y_AXIS_MAX_LIMIT) minValue = Y_AXIS_MAX_LIMIT;
+                
+                // 最小値が最大値を超えないようにする
+                if (minValue >= maxValue) {
+                    minValue = maxValue;
+                }
+                
+                this.value = minValue;
+                chartSettings.yMin = minValue;
+                
+                // スライダーも更新
+                yMinRange.value = minValue;
+                updateSelectedRange();
+            });
+            
+            // Y軸の最大値入力フィールドの更新時
+            yMaxInput.addEventListener('input', function() {
+                let maxValue = parseInt(this.value);
+                const minValue = parseInt(yMinInput.value);
+                
+                // 空の入力や不正な値の場合は処理しない
+                if (isNaN(maxValue)) return;
+                
+                // 最小値と最大値の制約
+                if (maxValue < 0) maxValue = 0;
+                if (maxValue > Y_AXIS_MAX_LIMIT) maxValue = Y_AXIS_MAX_LIMIT;
+                
+                // 最大値が最小値を下回らないようにする
+                if (maxValue <= minValue) {
+                    maxValue = minValue + 5; // 最小でも5の差をつける
+                    if (maxValue > Y_AXIS_MAX_LIMIT) {
+                        maxValue = Y_AXIS_MAX_LIMIT;
+                    }
+                }
+                
+                this.value = maxValue;
+                chartSettings.yMax = maxValue;
+                
+                // スライダーも更新
+                yMaxRange.value = maxValue;
+                updateSelectedRange();
+            });
+            
+            // 設定適用ボタン
+            applyButton.addEventListener('click', function() {
+                // 安全な方法で日時を取得
+                let xMinValue;
+                try {
+                    xMinValue = new Date(xMin.value).getTime();
+                    
+                    // 1ヶ月先まで表示が選択されていない場合は終了日時も取得
+                    if (!chartSettings.showFuture) {
+                        let xMaxValue = new Date(xMax.value).getTime();
+                        
+                        // NaNチェック
+                        if (isNaN(xMaxValue)) {
+                            alert('終了日時が正しく入力されていません。');
+                            return;
+                        }
+                        
+                        chartSettings.xMax = xMaxValue;
+                    }
+                    
+                    // NaNチェック
+                    if (isNaN(xMinValue)) {
+                        alert('開始日時が正しく入力されていません。');
+                        return;
+                    }
+                    
+                    chartSettings.xMin = xMinValue;
+                } catch (error) {
+                    console.error('日付解析エラー:', error);
+                    alert('日付形式が正しくありません。');
+                    return;
+                }
+                
+                // 入力値の検証
+                if (!chartSettings.showFuture && chartSettings.xMin >= chartSettings.xMax) {
+                    alert('開始日時は終了日時より前にしてください');
+                    return;
+                }
+                
+                if (chartSettings.yMin >= chartSettings.yMax) {
+                    alert('Y軸の最小値は最大値より小さくしてください');
+                    return;
+                }
+                
+                initChart(chartSettings);
+            });
+            
+            // リセットボタン
+            resetButton.addEventListener('click', function() {
+                // 初期値に戻す
+                xMin.value = '2025-04-02T01:17';
+                xMax.value = '2025-04-12T04:02';
+                xMax.disabled = false;
+                showFutureCheckbox.checked = false;
+                yMinRange.value = Y_AXIS_DEFAULT_MIN;
+                yMaxRange.value = Y_AXIS_DEFAULT_MAX;
+                yMinInput.value = Y_AXIS_DEFAULT_MIN;
+                yMaxInput.value = Y_AXIS_DEFAULT_MAX;
+                
+                chartSettings = {
+                    yMin: Y_AXIS_DEFAULT_MIN,
+                    yMax: Y_AXIS_DEFAULT_MAX,
+                    xMin: firstTimestamp,
+                    xMax: currentTimestamp,
+                    showFuture: false
+                };
+                
+                updateSelectedRange();
+                initChart(chartSettings);
+            });
+            
+            // 初期化時にも選択範囲を表示
+            updateSelectedRange();
+            updateXMaxInputState();
+        }
+        
+        // DOMロード時の初期化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 初期値を確実に設定
+            const yMinRange = document.getElementById('y-min-range');
+            const yMaxRange = document.getElementById('y-max-range');
+            const yMinInput = document.getElementById('y-min-input');
+            const yMaxInput = document.getElementById('y-max-input');
+            
+            // 初期値の数値を直接設定する（テンプレート変数の代わりに定数を使用）
+            const defaultYMin = Y_AXIS_DEFAULT_MIN;
+            const defaultYMax = Y_AXIS_DEFAULT_MAX;
+            
+            // 初期値を明示的に設定
+            yMinRange.value = defaultYMin;
+            yMaxRange.value = defaultYMax;
+            yMinInput.value = defaultYMin;
+            yMaxInput.value = defaultYMax;
+            
+            // チャート設定も更新
+            chartSettings.yMin = defaultYMin;
+            chartSettings.yMax = defaultYMax;
+            
+            setupEventListeners();
+            updateSelectedRange(); // 初期スライダー範囲を設定
+            initChart(chartSettings);
+        });
+    </script>
+</body>
+</html>
