@@ -328,7 +328,7 @@ function calculateYAxisRange(maxValue) {
 
 // HTMLファイルの生成と保存
 function generateAndSaveHtml(chartData, guidelineData, dateInfo, axisSettings, filteredData, timezone, timezoneDisplay, hasDataIncrease) {
-  const { firstDate, lastDate, currentDate, oneMonthFromNow, firstDateFormatted, currentDateFormatted, oneMonthFromNowFormatted } = dateInfo;
+  const { firstDate, lastDate, currentDate, oneMonthFromNow, firstDateFormatted, lastDateFormatted, currentDateFormatted, oneMonthFromNowFormatted } = dateInfo;
   const { yAxisMin, yAxisMax } = axisSettings;
   
   // この値を実際のY軸設定から取得したものに置き換える
@@ -622,11 +622,11 @@ function generateAndSaveHtml(chartData, guidelineData, dateInfo, axisSettings, f
             <div class="datetime-controls">
                 <div class="datetime-control-item">
                     <label for="x-min">開始日時 (${timezoneDisplay})</label>
-                    <input type="datetime-local" id="x-min" value="${firstDateFormatted}" min="${firstDateFormatted}" max="${currentDateFormatted}">
+                    <input type="datetime-local" id="x-min" value="${firstDateFormatted}" min="${firstDateFormatted}" max="${oneMonthFromNowFormatted}">
                 </div>
                 <div class="datetime-control-item">
                     <label for="x-max">終了日時 (${timezoneDisplay})</label>
-                    <input type="datetime-local" id="x-max" value="${currentDateFormatted}" min="${firstDateFormatted}" max="${currentDateFormatted}">
+                    <input type="datetime-local" id="x-max" value="${currentDateFormatted}" min="${firstDateFormatted}" max="${oneMonthFromNowFormatted}">
                 </div>
             </div>
             <div class="checkbox-container">

@@ -979,6 +979,63 @@ describe('generate_graph.js', () => {
       }
     });
   });
+
+  // 新しいテスト：2週間後の日付を設定できるかを確認
+  describe('generateAndSaveHtml with future dates', () => {
+    let originalDate;
+    
+    beforeEach(() => {
+      jest.clearAllMocks();
+      originalDate = global.Date;
+      
+      // Mock Date to simulate current time
+      const mockCurrentDate = new Date('2023-01-01T00:00:00Z');
+      global.Date = jest.fn(() => mockCurrentDate);
+      global.Date.now = jest.fn(() => mockCurrentDate.getTime());
+    });
+    
+    afterEach(() => {
+      global.Date = originalDate;
+    });
+    
+    it('should allow setting end date up to 1 month in the future', () => {
+      // 2週間後の日付を作成
+      const twoWeeksLater = new Date('2023-01-15T00:00:00Z');
+      
+      const chartData = [{ x: 1672531200000, y: 10.5 }];
+      const guidelineData = [];
+      const dateInfo = {
+        firstDate: new Date('2023-01-01T00:00:00Z'),
+        lastDate: new Date('2023-01-01T00:00:00Z'),
+        currentDate: new Date('2023-01-01T00:00:00Z'),
+        oneMonthFromNow: new Date('2023-02-01T00:00:00Z'),
+        firstDateFormatted: '2023-01-01T00:00',
+        lastDateFormatted: '2023-01-01T00:00',
+        currentDateFormatted: '2023-01-01T00:00',
+        oneMonthFromNowFormatted: '2023-02-01T00:00'
+      };
+      const axisSettings = { yAxisMin: 0, yAxisMax: 50 };
+      const filteredData = [{ date: '2023-01-01T00:00:00Z', remainingData: '10.5' }];
+      const timezone = 'UTC';
+      const timezoneDisplay = 'UTC+0';
+      const hasDataIncrease = false;
+      
+      // HTMLコンテンツを生成
+      generateAndSaveHtml(chartData, guidelineData, dateInfo, axisSettings, filteredData, timezone, timezoneDisplay, hasDataIncrease);
+      
+      // HTML内容を取得
+      const htmlContent = fsMock.writeFileSync.mock.calls[0][1];
+      
+      // 将来の日付設定のチェック
+      expect(htmlContent).toContain(`max="${dateInfo.oneMonthFromNowFormatted}"`); // 1ヶ月後までの日付が選択可能かチェック
+      expect(htmlContent).toContain(`<input type="checkbox" id="show-future" name="show-future">`); // 将来表示チェックボックスが存在するかチェック
+      expect(htmlContent).toContain(`1ヶ月先まで表示する`); // 1ヶ月先表示のラベルが存在するかチェック
+      
+      // JavaScript関数の存在チェック
+      expect(htmlContent).toContain(`updateXMaxInputState`); // 終了日時の有効/無効を切り替える関数
+      expect(htmlContent).toContain(`const xMaxValue = settings.showFuture ? oneMonthFromNowTimestamp : settings.xMax;`); // 将来の日付表示の条件分岐
+    });
+  });
   
   // fetchAndProcessData の統合テスト
   describe('fetchAndProcessData', () => {
