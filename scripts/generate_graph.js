@@ -288,7 +288,8 @@ function prepareChartData(filteredData, timezone, xMin = null, xMax = null) {
   // --- ここからY軸最大値の仕様変更 ---
   // xMin, xMaxが指定されていればその範囲、なければデフォルト（今月分）
   let rangeStart = xMin ? new Date(xMin) : (filteredByMonth.length > 0 ? new Date(filteredByMonth[0].date) : startOfMonth);
-  let rangeEnd = xMax ? new Date(xMax) : (filteredByMonth.length > 0 ? new Date(filteredByMonth[filteredByMonth.length - 1].date) : now);
+  // 終了日時のデフォルトを「当月の月末」に変更
+  let rangeEnd = xMax ? new Date(xMax) : endOfMonth;
 
   // 表示範囲内のデータのみ抽出
   const chartDataInRange = chartData.filter(point => {
@@ -302,7 +303,7 @@ function prepareChartData(filteredData, timezone, xMin = null, xMax = null) {
 
   // デフォルトのxMin/xMaxは今月分の範囲
   let defaultXMin = rangeStart.getTime();
-  let defaultXMax = rangeEnd.getTime();
+  let defaultXMax = endOfMonth.getTime();
 
   // 補助線・増加判定は全期間で
   let hasDataIncrease = false;
