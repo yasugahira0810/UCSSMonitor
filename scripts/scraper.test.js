@@ -41,7 +41,7 @@ describe('scraper.js', () => {
 
     // 1. logErrorDetails
     describe('logErrorDetails', () => {
-        it.skip('TS-01 TC-01-01: エラー詳細を正しくJSONファイルに出力する', async () => {
+        it('TS-01 TC-01-01: エラー詳細を正しくJSONファイルに出力する', async () => {
             const mockPage = { url: () => 'https://example.com' };
             const errorMessage = 'テストエラーメッセージ';
             
@@ -61,7 +61,7 @@ describe('scraper.js', () => {
             });
         });
 
-        it.skip('TS-01 TC-01-02: 特殊文字を含む複雑なエラーメッセージを正しく処理する', async () => {
+        it('TS-01 TC-01-02: 特殊文字を含む複雑なエラーメッセージを正しく処理する', async () => {
             const mockPage = { url: () => 'https://example.com' };
             const complexError = 'エラー発生:\n"引用符"と\\バックスラッシュを含む\n複数行のエラー';
             
@@ -139,7 +139,7 @@ describe('scraper.js', () => {
             expect(mockWaitForNavigation).toHaveBeenCalled();
         });
 
-        it.skip('TS-03 TC-03-03: ログインエラーメッセージが表示された場合はエラーをスローする', async () => {
+        it('TS-03 TC-03-03: ログインエラーメッセージが表示された場合はエラーをスローする', async () => {
             // エラーメッセージを含むHTML準備
             await page.setContent(`
                 <input id="inputEmail" />
@@ -181,7 +181,7 @@ describe('scraper.js', () => {
             expect(fsMock.writeFileSync).toHaveBeenCalled();
         });
 
-        it.skip('TS-03 TC-03-04: 入力フィールドが見つからない場合はエラーをスローする', async () => {
+        it('TS-03 TC-03-04: 入力フィールドが見つからない場合はエラーをスローする', async () => {
             // メールフィールドを含まないHTML
             await page.setContent(`
                 <div>
@@ -224,7 +224,7 @@ describe('scraper.js', () => {
             await expect(waitForPostLoginElements(page)).resolves.not.toThrow();
         });
 
-        it.skip('TS-04 TC-04-02: サービス詳細ボタンが表示されない場合はエラーをスローする', async () => {
+        it('TS-04 TC-04-02: サービス詳細ボタンが表示されない場合はエラーをスローする', async () => {
             // ボタンを含まないHTMLをセット
             await page.setContent('<div>別のページ</div>');
             
@@ -276,7 +276,7 @@ describe('scraper.js', () => {
             expect(result).toBe('123 GB');
         });
 
-        it.skip('TS-05 TC-05-02: 残りデータ通信量の要素が見つからない場合はエラーをスローする', async () => {
+        it('TS-05 TC-05-02: 残りデータ通信量の要素が見つからない場合はエラーをスローする', async () => {
             // HTML準備 - 必要な要素を含まない
             await page.setContent(`
                 <div id="ClientAreaHomePagePanels-Active_Products_Services-0">
@@ -328,7 +328,7 @@ describe('scraper.js', () => {
 
     // 6. エッジケースとエラー処理
     describe('エッジケースとエラー処理', () => {
-        it.skip('TS-06 TC-06-01: タイムアウトエラーが適切に処理される', async () => {
+        it('TS-06 TC-06-01: タイムアウトエラーが適切に処理される', async () => {
             await page.setContent('<div>テストページ</div>');
             
             // waitForSelectorがタイムアウトエラーをスローするようにモック
@@ -344,7 +344,7 @@ describe('scraper.js', () => {
             expect(fsMock.writeFileSync).toHaveBeenCalled();
         });
 
-        it.skip('TS-06 TC-06-02: 異常なHTML構造でも適切にエラー処理される', async () => {
+        it('TS-06 TC-06-02: 異常なHTML構造でも適切にエラー処理される', async () => {
             // 期待と異なる構造のHTMLをセット
             await page.setContent(`
                 <div id="completely-different-structure">
