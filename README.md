@@ -1,6 +1,6 @@
 # UCSSMonitor
 
-[![Version](https://img.shields.io/badge/version-v0.0.0-blue.svg)](https://github.com/yasugahira0810/UCSSMonitor)
+[![Version](https://img.shields.io/badge/version-v0.3.1-blue.svg)](https://github.com/yasugahira0810/UCSSMonitor)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Tests](https://img.shields.io/badge/tests-passing-brightgreen.svg)](https://github.com/yasugahira0810/UCSSMonitor/actions)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D%2018-green.svg)](https://nodejs.org)
