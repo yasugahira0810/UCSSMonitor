@@ -26,7 +26,8 @@ jobs:
       - name: Get latest tag
         id: get_tag
         run: |
-          echo "tag=$(git describe --tags --abbrev=0)" >> $GITHUB_OUTPUT
+          tag=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+          echo "tag=$tag" >> $GITHUB_OUTPUT
 
       - name: Update README version badge
         run: node scripts/update_readme_version.js ${{ steps.get_tag.outputs.tag }}
