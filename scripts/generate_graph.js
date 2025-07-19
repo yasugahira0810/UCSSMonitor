@@ -392,6 +392,7 @@ function generateAndSaveHtml(chartData, guidelineData, dateInfo, axisSettings, f
   const xMinInputMax = dateInfo.allLastDateFormatted;
   const xMaxInputMin = dateInfo.allFirstDateFormatted;
   const xMaxInputMax = dateInfo.allLastDateFormatted;
+  const xMaxInputFuture = dateInfo.oneMonthFromNowFormatted;
   
   const htmlContent = `<!DOCTYPE html>
 <html lang="ja">
@@ -681,7 +682,7 @@ function generateAndSaveHtml(chartData, guidelineData, dateInfo, axisSettings, f
                 </div>
                 <div class="datetime-control-item">
                     <label for="x-max">終了日時 (${timezoneDisplay})</label>
-                    <input type="datetime-local" id="x-max" value="${dateInfo.currentDateFormatted}" min="${xMaxInputMin}" max="${xMaxInputMax}">
+                    <input type="datetime-local" id="x-max" value="${dateInfo.currentDateFormatted}" min="${xMaxInputMin}" max="${xMaxInputMax}" data-future-max="${xMaxInputFuture}">
                 </div>
             </div>
             <div class="checkbox-container">
@@ -851,19 +852,19 @@ function generateAndSaveHtml(chartData, guidelineData, dateInfo, axisSettings, f
             selectedRange.style.width = (maxPercent - minPercent) + '%';
         }
         
-        // 1ヶ月先まで表示チェックボックスの状態に応じて、終了日時の入力フィールドの有効/無効を切り替え
+        // 1ヶ月先まで表示チェックボックスの状態に応じて、終了日時の入力フィールドの有効/無効とmax属性を切り替え
         function updateXMaxInputState() {
             const showFuture = document.getElementById('show-future').checked;
             const xMaxInput = document.getElementById('x-max');
-            
             if (showFuture) {
-                // 1ヶ月先まで表示が選択された場合、終了日時の入力を無効化
+                // 1ヶ月先まで表示が選択された場合、終了日時の入力を無効化し、max属性を1ヶ月後に
                 xMaxInput.disabled = true;
-                // 1ヶ月後の日時を設定
+                xMaxInput.setAttribute('max', xMaxInput.getAttribute('data-future-max'));
                 chartSettings.showFuture = true;
             } else {
-                // 通常表示の場合、終了日時の入力を有効化
+                // 通常表示の場合、終了日時の入力を有効化し、max属性を全データ期間の最大値に
                 xMaxInput.disabled = false;
+                xMaxInput.setAttribute('max', xMaxInput.getAttribute('data-max'));
                 chartSettings.showFuture = false;
             }
         }
