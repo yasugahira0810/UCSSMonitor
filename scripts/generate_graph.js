@@ -259,10 +259,15 @@ function prepareChartData(filteredData, timezone) {
     };
   }
 
+  // 全期間の最初と最後のデータ日時を取得
+  const sortedAll = [...filteredData].sort((a, b) => new Date(a.date) - new Date(b.date));
+  const allFirstDate = new Date(sortedAll[0].date);
+  const allLastDate = new Date(sortedAll[sortedAll.length - 1].date);
+
   // 現在の月の初日と最終日を計算
   const now = new Date();
   const startOfMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
-  const endOfMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0, 23, 59, 59, 999)); // 23:00から23:59:59:999に戻す
+  const endOfMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0, 23, 59, 59, 999));
   const oneMonthFromNow = new Date(now.getTime());
   oneMonthFromNow.setMonth(oneMonthFromNow.getMonth() + 1);
 
@@ -326,6 +331,7 @@ function prepareChartData(filteredData, timezone) {
     }
   }
 
+  // dateInfoに全期間のfirst/lastも含める
   const dateInfo = {
     firstDate: startOfMonth,
     lastDate: endOfMonth,
@@ -334,7 +340,11 @@ function prepareChartData(filteredData, timezone) {
     firstDateFormatted: formatDateForInput(startOfMonth, timezone),
     lastDateFormatted: formatDateForInput(endOfMonth, timezone),
     currentDateFormatted: formatDateForInput(now, timezone),
-    oneMonthFromNowFormatted: formatDateForInput(oneMonthFromNow, timezone)
+    oneMonthFromNowFormatted: formatDateForInput(oneMonthFromNow, timezone),
+    allFirstDate,
+    allLastDate,
+    allFirstDateFormatted: formatDateForInput(allFirstDate, timezone),
+    allLastDateFormatted: formatDateForInput(allLastDate, timezone)
   };
 
   return {
@@ -376,6 +386,12 @@ function generateAndSaveHtml(chartData, guidelineData, dateInfo, axisSettings, f
   // 最新のデータ量を取得
   const latestData = filteredData.length > 0 ? filteredData[filteredData.length - 1] : null;
   const latestRemainingData = latestData ? parseFloat(latestData.remainingData).toFixed(1) : 'N/A';
+  
+  // 横軸のmin/maxを全期間に拡張
+  const xMinInputMin = dateInfo.allFirstDateFormatted;
+  const xMinInputMax = dateInfo.allLastDateFormatted;
+  const xMaxInputMin = dateInfo.allFirstDateFormatted;
+  const xMaxInputMax = dateInfo.allLastDateFormatted;
   
   const htmlContent = `<!DOCTYPE html>
 <html lang="ja">
@@ -661,11 +677,11 @@ function generateAndSaveHtml(chartData, guidelineData, dateInfo, axisSettings, f
             <div class="datetime-controls">
                 <div class="datetime-control-item">
                     <label for="x-min">開始日時 (${timezoneDisplay})</label>
-                    <input type="datetime-local" id="x-min" value="${firstDateFormatted}" min="${firstDateFormatted}" max="${oneMonthFromNowFormatted}">
+                    <input type="datetime-local" id="x-min" value="${dateInfo.firstDateFormatted}" min="${xMinInputMin}" max="${xMinInputMax}">
                 </div>
                 <div class="datetime-control-item">
                     <label for="x-max">終了日時 (${timezoneDisplay})</label>
-                    <input type="datetime-local" id="x-max" value="${currentDateFormatted}" min="${firstDateFormatted}" max="${oneMonthFromNowFormatted}">
+                    <input type="datetime-local" id="x-max" value="${dateInfo.currentDateFormatted}" min="${xMaxInputMin}" max="${xMaxInputMax}">
                 </div>
             </div>
             <div class="checkbox-container">

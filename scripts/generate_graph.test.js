@@ -828,4 +828,21 @@ describe('generate_graph.js', () => {
       expect(processExitMock).toHaveBeenCalledWith(1);
     });
   });
+
+  // 全期間データ範囲のdateInfo反映
+  describe('全期間データ範囲のdateInfo反映', () => {
+    it('should include allFirstDate and allLastDate in dateInfo for full data range', () => {
+      const filteredData = [
+        { date: '2025-04-01T00:00:00Z', remainingData: '100' },
+        { date: '2025-05-01T00:00:00Z', remainingData: '90' },
+        { date: '2025-07-01T00:00:00Z', remainingData: '80' }
+      ];
+      const timezone = 'UTC';
+      const result = prepareChartData(filteredData, timezone);
+      expect(result.dateInfo.allFirstDate.getTime()).toBe(new Date('2025-04-01T00:00:00Z').getTime());
+      expect(result.dateInfo.allLastDate.getTime()).toBe(new Date('2025-07-01T00:00:00Z').getTime());
+      expect(result.dateInfo.allFirstDateFormatted).toBe('2025-04-01T00:00');
+      expect(result.dateInfo.allLastDateFormatted).toBe('2025-07-01T00:00');
+    });
+  });
 });
