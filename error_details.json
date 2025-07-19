@@ -1,6 +1,6 @@
 {
-  "date": "2025-07-19T12:55:49.300Z",
+  "date": "2025-07-19T14:39:13.177Z",
   "status": "エラー",
-  "error": "メールアドレス入力フィールドが見つかりません",
+  "error": "環境変数 UCSS_EMAIL または UCSS_PASSWORD が設定されていません",
   "url": "about:blank"
 }
