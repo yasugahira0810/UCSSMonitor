@@ -330,7 +330,7 @@ describe('generate_graph.js', () => {
       jest.clearAllMocks();
     });
     
-    it.skip('should filter data to the current month and prepare chart data', () => {
+    it('should filter data to the current month and prepare chart data', () => {
       const filteredData = [
         { date: '2025-06-30T23:59:59Z', remainingData: '100' },
         { date: '2025-07-01T00:00:00Z', remainingData: '90' },
