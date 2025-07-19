@@ -8,6 +8,11 @@
 
 UCSSMonitor is a tool that automatically monitors and visualizes the remaining data usage of the UCSS VPN service. It fetches data from the UCSS website, records it to GitHub Gist, and generates interactive charts to track usage over time.
 
+## Sample Visualization
+
+You can see a live sample graph here:
+https://yasugahira0810.github.io/UCSSMonitor/
+
 ## Features
 
 - Automated data scraping from the UCSS service portal using Puppeteer
