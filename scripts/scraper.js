@@ -68,30 +68,35 @@ const login = async (page, email, password) => {
     // 環境変数の状態をログ出力（値はマスク）
     console.log(`[DEBUG] UCSS_EMAIL: ${email ? '***' : '未設定'}, UCSS_PASSWORD: ${password ? '***' : '未設定'}`);
     if (!email || !password) {
-      console.log('[ERROR] 環境変数（UCSS_EMAIL, UCSS_PASSWORD）が未設定または間違いです');
+      console.log('[ERROR] ENV: UCSS_EMAILまたはUCSS_PASSWORDが未設定または空です。');
       throw new Error('環境変数 UCSS_EMAIL または UCSS_PASSWORD が設定されていません');
     }
 
+    console.log(`[DEBUG] ページ遷移: ${URLS.login} へ移動します`);
     await page.goto(URLS.login);
     try {
       await waitForSelector(page, SELECTORS.emailInput, TIMEOUT.short, 'メールアドレス入力フィールドが見つかりません');
+      console.log(`[DEBUG] セレクタ検出: emailInput (${SELECTORS.emailInput}) OK`);
     } catch (e) {
-      console.log(`[ERROR] サイト構造の変化: emailInputセレクタ(${SELECTORS.emailInput})が見つかりません`);
+      console.log(`[ERROR] STRUCTURE: emailInputセレクタ(${SELECTORS.emailInput})が見つかりません`);
       throw e;
     }
     try {
       await waitForSelector(page, SELECTORS.passwordInput, TIMEOUT.short, 'パスワード入力フィールドが見つかりません');
+      console.log(`[DEBUG] セレクタ検出: passwordInput (${SELECTORS.passwordInput}) OK`);
     } catch (e) {
-      console.log(`[ERROR] サイト構造の変化: passwordInputセレクタ(${SELECTORS.passwordInput})が見つかりません`);
+      console.log(`[ERROR] STRUCTURE: passwordInputセレクタ(${SELECTORS.passwordInput})が見つかりません`);
       throw e;
     }
     try {
       await waitForSelector(page, SELECTORS.loginButton, TIMEOUT.short, 'ログインボタンが見つかりません');
+      console.log(`[DEBUG] セレクタ検出: loginButton (${SELECTORS.loginButton}) OK`);
     } catch (e) {
-      console.log(`[ERROR] サイト構造の変化: loginButtonセレクタ(${SELECTORS.loginButton})が見つかりません`);
+      console.log(`[ERROR] STRUCTURE: loginButtonセレクタ(${SELECTORS.loginButton})が見つかりません`);
       throw e;
     }
 
+    console.log('[DEBUG] 入力処理: メール・パスワード入力＆ログインボタン押下');
     await page.type(SELECTORS.emailInput, email);
     await page.type(SELECTORS.passwordInput, password);
     await page.click(SELECTORS.loginButton);
@@ -102,18 +107,23 @@ const login = async (page, email, password) => {
     if (errorMessageElement) {
       const errorMessageText = await page.evaluate(el => el.innerText, errorMessageElement);
       if (errorMessageText.includes('ログイン失敗') || errorMessageText.includes('エラー')) {
-        console.log(`[ERROR] ログイン失敗: ${errorMessageText}`);
+        console.log(`[ERROR] LOGIN: ログイン失敗: ${errorMessageText}`);
         throw new Error(`ログイン失敗: ${errorMessageText}`);
+      } else {
+        console.log(`[DEBUG] ログインエラーメッセージ要素は存在するが、失敗ワードは含まれず: ${errorMessageText}`);
       }
+    } else {
+      console.log('[DEBUG] ログインエラーメッセージ要素なし');
     }
 
     if (!(await isLoggedIn(page))) {
-      console.log('[ERROR] ログイン後のページに必要な要素が見つかりません');
+      console.log('[ERROR] LOGIN: ログイン後のページに必要な要素が見つかりません');
       throw new Error('ログイン後のページに必要な要素が見つかりません');
     }
 
     console.log(`[INFO] ログイン成功: ${page.url()}`);
   } catch (error) {
+    console.log(`[FATAL] login関数で例外発生: ${error && error.message}`);
     await logErrorDetails(page, error.message);
     throw error;
   }
@@ -136,6 +146,7 @@ const waitForPostLoginElements = async (page) => {
  */
 const getRemainingData = async (page) => {
   try {
+    console.log('[DEBUG] 残りデータ取得: サービス詳細ボタン押下');
     await page.click(SELECTORS.serviceDetailsButton);
     await waitForSelector(
       page, 
@@ -143,11 +154,12 @@ const getRemainingData = async (page) => {
       TIMEOUT.medium, 
       '残りデータ通信量の要素が見つかりません'
     );
-    
+    console.log(`[DEBUG] セレクタ検出: remainingDataText (${SELECTORS.remainingDataText}) OK`);
     const remainingData = await page.$eval(SELECTORS.remainingDataText, el => el.innerText);
-    console.log(`remaining_data:${remainingData.trim()}`);
+    console.log(`[INFO] remaining_data:${remainingData.trim()}`);
     return remainingData.trim();
   } catch (error) {
+    console.log(`[FATAL] getRemainingData関数で例外発生: ${error && error.message}`);
     await logErrorDetails(page, '残りデータ通信量の取得に失敗しました');
     throw error;
   }
