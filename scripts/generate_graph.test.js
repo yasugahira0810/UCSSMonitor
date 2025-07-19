@@ -880,4 +880,39 @@ describe('generate_graph.js', () => {
       expect(result.dateInfo.allLastDateFormatted).toBe('2025-07-01T00:00');
     });
   });
+
+  // prepareChartData 月末終了日時のテスト
+  describe('prepareChartData 月末終了日時', () => {
+    const originalDate = global.Date;
+    beforeEach(() => {
+      // 2025-07-19を現在日時としてモック
+      const mockDate = new Date('2025-07-19T00:00:00Z');
+      global.Date = class extends originalDate {
+        constructor(dateString) {
+          if (dateString) {
+            return new originalDate(dateString);
+          }
+          return mockDate;
+        }
+        static now() {
+          return mockDate.getTime();
+        }
+      };
+    });
+    afterEach(() => {
+      global.Date = originalDate;
+    });
+    it('should set lastDate to end of month and lastDateFormatted to month end', () => {
+      const filteredData = [
+        { date: '2025-07-01T00:00:00Z', remainingData: '10.0' },
+        { date: '2025-07-19T00:00:00Z', remainingData: '8.0' }
+      ];
+      const timezone = 'UTC';
+      const result = prepareChartData(filteredData, timezone);
+      // 月末 2025-07-31 23:59:59.999 UTC
+      const expectedLastDate = new Date(Date.UTC(2025, 6, 31, 23, 59, 59, 999));
+      expect(result.dateInfo.lastDate.getTime()).toBe(expectedLastDate.getTime());
+      expect(result.dateInfo.lastDateFormatted).toBe('2025-07-31T23:59');
+    });
+  });
 });

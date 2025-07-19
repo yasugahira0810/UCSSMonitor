@@ -192,6 +192,20 @@
   - 表示範囲: 100GB, 80GB
 - **期待される結果**: axisSettings内のyAxisMaxは100となる
 
+#### 5.5 グラフ初期終了日時が月末であることの検証
+- **目的**: prepareChartDataのdateInfo.lastDateが月末になっていることを確認する
+- **前提条件**: 現在日時が2025-07-19、データが7月中に存在
+- **入力**:
+  ```javascript
+  [
+    { date: '2025-07-01T00:00:00Z', remainingData: '10.0' },
+    { date: '2025-07-19T00:00:00Z', remainingData: '8.0' }
+  ], 'UTC'
+  ```
+- **期待される結果**:
+  - dateInfo.lastDateが2025-07-31 23:59:59.999（UTC）である
+  - dateInfo.lastDateFormattedが'2025-07-31T23:59'である
+
 ### 6. calculateYAxisRange 関数のテスト
 
 #### 6.1 最大値が50GB以下の場合

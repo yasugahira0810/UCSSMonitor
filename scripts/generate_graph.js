@@ -722,7 +722,7 @@ function generateAndSaveHtml(chartData, guidelineData, dateInfo, axisSettings, f
             yMin: ${yAxisMin},
             yMax: ${yAxisMax},
             xMin: firstTimestamp,
-            xMax: currentTimestamp,  // 初期値を現在の時刻に設定
+            xMax: lastTimestamp,  // ←ここを月末のタイムスタンプに修正
             showFuture: false
         };
         
@@ -1053,7 +1053,7 @@ function generateAndSaveHtml(chartData, guidelineData, dateInfo, axisSettings, f
                     yMin: Y_AXIS_DEFAULT_MIN,
                     yMax: Y_AXIS_DEFAULT_MAX,
                     xMin: firstTimestamp,
-                    xMax: currentTimestamp,
+                    xMax: lastTimestamp,
                     showFuture: false
                 };
                 
