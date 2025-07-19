@@ -38,8 +38,11 @@ async function updateGist() {
   } catch (error) {
     console.error('Error updating Gist:', error.message);
     if (error.response) {
-      console.error('Response data:', error.response.data);
+      console.error('Full error response:', JSON.stringify(error.response, null, 2));
+    } else {
+      console.error('Full error:', error);
     }
+    process.exit(1); // エラーでプロセスを終了
   }
 }
 
@@ -56,6 +59,7 @@ async function fetchGistData(octokit) {
   });
 
   if (!response || !response.data) {
+    console.error('Raw response from Octokit:', response);
     throw new Error('No data returned from Gist API');
   }
   const gistData = response.data;
