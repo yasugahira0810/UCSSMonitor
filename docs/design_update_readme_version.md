@@ -39,6 +39,9 @@ GitHubリリースタグ作成時、README.mdのバージョンバッジを自�
 name: Update README Version Badge
 
 on:
+  push:
+    branches:
+      - main
   release:
     types: [published]
   workflow_dispatch:
@@ -121,3 +124,58 @@ README.mdのバージョンバッジ自動更新スクリプト（scripts/update
 
 - scripts/update_readme_version.test.js を新規作成し、jestで上記テストケースを自動化する
 - fsモジュールは__mocks__でモック化し、ファイル操作を安全に行う
+
+# 追記: pushイベント対応
+
+## 追加仕様
+- pushイベント（mainブランチ）でもワークフローを発火させる。
+- push時は、mainブランチへのpushのみ対象とする。
+- 最新タグ（git describe --tags --abbrev=0）を取得し、README.mdのバージョンバッジを常にそのタグに更新する。
+- 既に最新タグと一致していれば何もしない。
+- README.mdが更新された場合のみコミット＆プッシュする。
+
+## ワークフローYAML例（push対応）
+```yaml
+name: Update README Version Badge
+
+on:
+  push:
+    branches:
+      - main
+  release:
+    types: [published]
+  workflow_dispatch:
+
+jobs:
+  update-readme-version:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Get latest tag
+        id: get_tag
+        run: |
+          echo "tag=$(git describe --tags --abbrev=0)" >> $GITHUB_OUTPUT
+
+      - name: Update README version badge
+        run: node scripts/update_readme_version.js ${{ steps.get_tag.outputs.tag }}
+
+      - name: Commit and push changes
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "actions@github.com"
+          git add README.md
+          git commit -m "Update version badge in README.md to ${{ steps.get_tag.outputs.tag }} [skip ci]" || echo "No changes to commit"
+          git push origin HEAD:main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+```
