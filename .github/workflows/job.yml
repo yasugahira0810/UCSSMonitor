@@ -26,6 +26,9 @@ jobs:
         run: npm install
         
       - name: Run tests
+        env:
+          UCSS_EMAIL: test@example.com
+          UCSS_PASSWORD: testpassword
         run: |
           # Use npm test which uses the Jest config from package.json
           npm test

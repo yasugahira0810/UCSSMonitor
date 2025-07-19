@@ -51,9 +51,14 @@ async function fetchGistData(octokit) {
     throw new Error('GIST_ID is not defined in the environment variables.');
   }
 
-  const { data: gistData } = await octokit.gists.get({
+  const response = await octokit.gists.get({
     gist_id: GIST_ID
   });
+
+  if (!response || !response.data) {
+    throw new Error('No data returned from Gist API');
+  }
+  const gistData = response.data;
 
   // Validate Gist data
   if (!gistData.files || Object.keys(gistData.files).length === 0) {
