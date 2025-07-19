@@ -183,8 +183,33 @@ function formatDateForInput(date, timezone) {
       }
     });
 
+    // 時間が24:00の場合は00:00に正規化
+    let hour = mapped.hour;
+    let day = mapped.day;
+    let month = mapped.month;
+    let year = mapped.year;
+    
+    if (hour === '24') {
+      hour = '00';
+      // 日付を1日進める必要がある場合の処理
+      const nextDay = new Date(date);
+      nextDay.setDate(nextDay.getDate() + 1);
+      const nextDayParts = new Intl.DateTimeFormat('en-US', {
+        timeZone: timezone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      }).formatToParts(nextDay);
+      
+      nextDayParts.forEach(part => {
+        if (part.type === 'year') year = part.value;
+        if (part.type === 'month') month = part.value;
+        if (part.type === 'day') day = part.value;
+      });
+    }
+
     // Format the string
-    return `${mapped.year}-${mapped.month}-${mapped.day}T${mapped.hour}:${mapped.minute}`;
+    return `${year}-${month}-${day}T${hour}:${mapped.minute}`;
   } catch (error) {
     // Fallback method if Intl methods fail
     try {
