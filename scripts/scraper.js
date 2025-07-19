@@ -156,9 +156,16 @@ const getRemainingData = async (page) => {
     );
     console.log(`[DEBUG] セレクタ検出: remainingDataText (${SELECTORS.remainingDataText}) OK`);
     const remainingData = await page.$eval(SELECTORS.remainingDataText, el => el.innerText);
+    if (!remainingData || !remainingData.trim()) {
+      console.log('[ERROR] DATA: データ要素は存在するが値が空です');
+      throw new Error('データ要素は存在するが値が空です');
+    }
     console.log(`[INFO] remaining_data:${remainingData.trim()}`);
     return remainingData.trim();
   } catch (error) {
+    if (error.message && error.message.includes('残りデータ通信量の要素が見つかりません')) {
+      console.log('[ERROR] DATA: 残りデータ通信量の要素が見つかりません');
+    }
     console.log(`[FATAL] getRemainingData関数で例外発生: ${error && error.message}`);
     await logErrorDetails(page, '残りデータ通信量の取得に失敗しました');
     throw error;
