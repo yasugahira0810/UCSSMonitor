@@ -18,7 +18,7 @@ HTML形式でインタラクティブなチャートを生成し、GitHub Action
 - `CONSTANTS`:
   - OUTPUT_PATH: 出力HTMLファイルのパス ('./docs/index.html')
   - DOCS_DIR: ドキュメントディレクトリのパス ('./docs')
-  - Y_AXIS: Y軸の設定（DEFAULT_MIN, THRESHOLDS）
+  - Y_AXIS: Y軸の設定（DEFAULT_MIN: 0, DEFAULT_MAX: 100, MAX_LIMIT: 500, THRESHOLDS: [50, 100]）
 - `TIMEZONE_MAP`: タイムゾーン名称とその表示名のマッピング
 
 ## 関数仕様

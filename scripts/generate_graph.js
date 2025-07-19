@@ -218,7 +218,7 @@ function prepareChartData(filteredData, timezone) {
       chartData: [],
       guidelineData: [],
       dateInfo: {},
-      axisSettings: { yAxisMin: 0, yAxisMax: 50 },
+      axisSettings: { yAxisMin: CONSTANTS.Y_AXIS.DEFAULT_MIN, yAxisMax: CONSTANTS.Y_AXIS.DEFAULT_MAX },
       hasDataIncrease: false
     };
   }
@@ -249,7 +249,7 @@ function prepareChartData(filteredData, timezone) {
         lastDateFormatted: formatDateForInput(endOfMonth, timezone),
         currentDateFormatted: formatDateForInput(now, timezone)
       },
-      axisSettings: { yAxisMin: 0, yAxisMax: 50 },
+      axisSettings: { yAxisMin: CONSTANTS.Y_AXIS.DEFAULT_MIN, yAxisMax: CONSTANTS.Y_AXIS.DEFAULT_MAX },
       hasDataIncrease: false
     };
   }
@@ -315,9 +315,9 @@ function calculateYAxisRange(maxValue) {
   // maxValueに基づいて最大値を計算（50GBごとに区切る）
   let yAxisMax = 50 * (Math.floor(maxValue / 50) + 1);
   
-  // 最大値が50より小さい場合は50を使用
-  if (yAxisMax < 50) {
-    yAxisMax = 50;
+  // 最大値がデフォルト最大値より小さい場合はデフォルト最大値を使用
+  if (yAxisMax < CONSTANTS.Y_AXIS.DEFAULT_MAX) {
+    yAxisMax = CONSTANTS.Y_AXIS.DEFAULT_MAX;
   }
   
   // 最大値が上限を超えないようにする
