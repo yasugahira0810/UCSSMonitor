@@ -763,14 +763,12 @@ describe('generate_graph.js', () => {
       process.env.GIST_ID = 'testid';
       
       // コンソール出力とプロセス終了のモック
-      consoleLogMock = jest.fn().mockImplementation((msg) => {
-        // 実際にテスト中にログを出力
-        console.info(msg);
-      });
+      consoleLogMock = jest.fn();
       consoleErrorMock = jest.fn();
       processExitMock = jest.fn();
       
       console.log = consoleLogMock;
+      console.info = consoleLogMock; // console.infoも同じモック関数で上書き
       console.error = consoleErrorMock;
       process.exit = processExitMock;
       
