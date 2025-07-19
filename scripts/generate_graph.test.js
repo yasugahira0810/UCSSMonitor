@@ -364,7 +364,7 @@ describe('generate_graph.js', () => {
       const result = prepareChartData(filteredData, timezone);
       
       expect(result.chartData).toEqual([]);
-      expect(result.axisSettings.yAxisMax).toBe(50);
+      expect(result.axisSettings.yAxisMax).toBe(100); // デフォルト値が100に変更されたため修正
     });
 
     it('should handle empty data array by returning an empty state', () => {
@@ -471,16 +471,8 @@ describe('generate_graph.js', () => {
 
   // calculateYAxisRange のテスト
   describe('calculateYAxisRange', () => {
-    it('should set 50 when value is below 50', () => {
+    it('should set 100 when value is below 100', () => {
       const maxValue = 30;
-      const yAxisSettings = calculateYAxisRange(maxValue);
-      expect(yAxisSettings).toEqual({
-        yAxisMin: 0,
-        yAxisMax: 50,
-      });
-    });
-    it('should set 100 when value is between 50 and 100', () => {
-      const maxValue = 75;
       const yAxisSettings = calculateYAxisRange(maxValue);
       expect(yAxisSettings).toEqual({
         yAxisMin: 0,
