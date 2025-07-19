@@ -297,9 +297,19 @@ describe('generate_graph.js', () => {
   // prepareChartData のテスト
   describe('prepareChartData', () => {
     const originalDate = global.Date;
+    let originalEnv;
 
-    // テストのたびにDateをモックする
+    // テストのたびにDateをモックし、環境変数を設定
     beforeEach(() => {
+      originalEnv = { ...process.env };
+      
+      // 必要な環境変数を設定
+      process.env.GIST_USER = 'testuser';
+      process.env.GIST_ID = 'testid';
+      process.env.GITHUB_ACTIONS = 'true';
+      process.env.GITHUB_OUTPUT = '/tmp/github_output';
+      process.env.UTC_OFFSET = '+0'; // UTCに設定
+      
       const mockDate = new Date('2025-07-19T00:00:00Z');
       global.Date = class extends originalDate {
         constructor(dateString) {
@@ -316,6 +326,8 @@ describe('generate_graph.js', () => {
 
     afterEach(() => {
       global.Date = originalDate;
+      process.env = originalEnv;
+      jest.clearAllMocks();
     });
     
     it('should filter data to the current month and prepare chart data', () => {
@@ -336,8 +348,9 @@ describe('generate_graph.js', () => {
         { x: new originalDate('2025-07-31T23:59:59Z').getTime(), y: 70 }
       ]);
       expect(result.axisSettings.yAxisMax).toBe(100);
+      // 月初の開始は 00:00 となるはず
       expect(result.dateInfo.firstDateFormatted).toBe('2025-07-01T00:00');
-      // In UTC, the last day of July is the 31st, and the time should be at the end of the day.
+      // 月末の終了は 23:59 となるはず
       expect(result.dateInfo.lastDateFormatted).toBe('2025-07-31T23:59');
     });
     
