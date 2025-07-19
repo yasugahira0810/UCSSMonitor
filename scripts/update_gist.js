@@ -3,10 +3,6 @@ import fetch from 'node-fetch';
 import path from 'path';
 import { Octokit } from '@octokit/rest';
 
-const REMAINING_DATA = process.env.REMAINING_DATA;
-const GIST_USER = process.env.GIST_USER;
-const GIST_ID = process.env.GIST_ID;
-const GH_PAT = process.env.GH_PAT;
 const FILENAME = 'data.json';
 
 /**
@@ -15,11 +11,11 @@ const FILENAME = 'data.json';
 async function updateGist() {
   try {
     const octokit = new Octokit({ 
-      auth: GH_PAT,
+      auth: process.env.GH_PAT,
       request: { fetch }
     });
 
-    console.log(`Updating Gist at: https://gist.github.com/${GIST_USER}/${GIST_ID}`);
+    console.log(`Updating Gist at: https://gist.github.com/${process.env.GIST_USER}/${process.env.GIST_ID}`);
     
     // Get existing Gist data
     const existingData = await fetchGistData(octokit);
@@ -27,7 +23,7 @@ async function updateGist() {
     // Create new entry
     const newEntry = {
       date: new Date().toISOString(),
-      remainingData: parseFloat(REMAINING_DATA)
+      remainingData: parseFloat(process.env.REMAINING_DATA)
     };
 
     // Update Gist
@@ -50,12 +46,12 @@ async function updateGist() {
  * Fetch existing data from the Gist
  */
 async function fetchGistData(octokit) {
-  if (!GIST_ID) {
+  if (!process.env.GIST_ID) {
     throw new Error('GIST_ID is not defined in the environment variables.');
   }
 
   const response = await octokit.gists.get({
-    gist_id: GIST_ID
+    gist_id: process.env.GIST_ID
   });
 
   if (!response || !response.data) {
@@ -83,7 +79,7 @@ async function fetchGistData(octokit) {
  */
 async function saveGistData(octokit, updatedData) {
   await octokit.gists.update({
-    gist_id: GIST_ID,
+    gist_id: process.env.GIST_ID,
     files: {
       [FILENAME]: {
         content: JSON.stringify(updatedData, null, 2)
@@ -162,10 +158,12 @@ function generateFiles() {
 }
 
 // Execute main functions
-(async () => {
-  await updateGist();
-  generateFiles();
-})();
+if (process.env.NODE_ENV !== 'test') {
+  (async () => {
+    await updateGist();
+    generateFiles();
+  })();
+}
 
 // Export functions for testing purposes
 export {

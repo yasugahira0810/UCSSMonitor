@@ -76,6 +76,8 @@ const updateGistModule = await import('./update_gist.js');
 const { updateGist, fetchGistData, saveGistData, generateFiles } = updateGistModule;
 
 describe('update_gist.js', () => {
+    let exitSpy;
+
     beforeEach(() => {
         jest.clearAllMocks();
         
@@ -85,6 +87,11 @@ describe('update_gist.js', () => {
         // コンソール出力をモック
         console.error = jest.fn();
         console.log = jest.fn();
+        exitSpy = jest.spyOn(process, 'exit').mockImplementation(() => {});
+    });
+
+    afterEach(() => {
+        exitSpy.mockRestore();
     });
 
     describe('updateGist', () => {
@@ -139,17 +146,20 @@ describe('update_gist.js', () => {
         });
 
         // テストケース2: エラーが発生した場合でも例外をスローせずに処理すること
-        it('should handle errors gracefully', async () => {
+        it('should handle errors gracefully and exit', async () => {
             const mockError = new Error('Failed to fetch Gist');
             mockError.response = { data: 'Error response data' };
             mockGistGet.mockRejectedValueOnce(mockError);
 
-            // テスト実行 - エラーはキャッチされるはず
-            await expect(updateGist()).resolves.not.toThrow();
+            // 関数を実行
+            await updateGist();
             
             // エラーログが出力されていることを確認
             expect(console.error).toHaveBeenCalledWith('Error updating Gist:', 'Failed to fetch Gist');
-            expect(console.error).toHaveBeenCalledWith('Response data:', 'Error response data');
+            expect(console.error).toHaveBeenCalledWith('Full error response:', JSON.stringify(mockError.response, null, 2));
+            
+            // プロセスが終了コード1で終了することを確認
+            expect(exitSpy).toHaveBeenCalledWith(1);
         });
     });
 
@@ -214,15 +224,8 @@ describe('update_gist.js', () => {
                 // GIST_IDを一時的に削除
                 delete process.env.GIST_ID;
                 
-                // 直接関数を呼び出す代わりにモジュールを再インポートする
-                // これにより、モジュール内の定数がプロセス環境から再評価される
-                jest.resetModules();
-                
-                // モジュールを再インポート
-                const { fetchGistData: freshFetchGistData } = await import('./update_gist.js');
-                
-                // 再インポートした関数を呼び出し
-                await expect(freshFetchGistData(mockOctokit))
+                // fetchGistDataを呼び出し、エラーがスローされることを確認
+                await expect(fetchGistData(mockOctokit))
                     .rejects
                     .toThrow('GIST_ID is not defined in the environment variables');
                 

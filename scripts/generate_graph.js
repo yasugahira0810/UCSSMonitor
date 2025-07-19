@@ -164,7 +164,7 @@ function formatDateForInput(date, timezone) {
   // This is more reliable than using toLocaleString which can cause issues in tests
   try {
     // Get date parts in the target timezone
-    const options = { timeZone: timezone };
+    const options = { timeZone: timezone, hourCycle: 'h23' };
     const parts = new Intl.DateTimeFormat('en-US', {
       ...options,
       year: 'numeric',
