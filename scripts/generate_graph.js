@@ -380,7 +380,7 @@ function generateAndSaveHtml(chartData, guidelineData, dateInfo, axisSettings, f
   const { firstDate, lastDate, currentDate, oneMonthFromNow, firstDateFormatted, lastDateFormatted, currentDateFormatted, oneMonthFromNowFormatted } = dateInfo;
   const { yAxisMin, yAxisMax } = axisSettings;
   
-  // この値を実際のY軸設定から取得したものに置き換える
+  // この値を実際のY軸設定から取得したものに置き換えます
   const defaultYAxisMax = yAxisMax;
   
   // 最新のデータ量を取得
@@ -682,7 +682,7 @@ function generateAndSaveHtml(chartData, guidelineData, dateInfo, axisSettings, f
                 </div>
                 <div class="datetime-control-item">
                     <label for="x-max">終了日時 (${timezoneDisplay})</label>
-                    <input type="datetime-local" id="x-max" value="${dateInfo.currentDateFormatted}" min="${xMaxInputMin}" max="${xMaxInputMax}" data-future-max="${xMaxInputFuture}">
+                    <input type="datetime-local" id="x-max" value="${dateInfo.lastDateFormatted}" min="${xMaxInputMin}" max="${xMaxInputMax}" data-future-max="${xMaxInputFuture}">
                 </div>
             </div>
             <div class="checkbox-container">
