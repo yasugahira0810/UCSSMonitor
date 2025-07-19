@@ -226,7 +226,7 @@ function prepareChartData(filteredData, timezone) {
   // 現在の月の初日と最終日を計算
   const now = new Date();
   const startOfMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
-  const endOfMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0, 23, 59, 59, 999));
+  const endOfMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0, 23, 0, 0, 0)); // 23:59から23:00に変更
   const oneMonthFromNow = new Date(now.getTime());
   oneMonthFromNow.setMonth(oneMonthFromNow.getMonth() + 1);
 
