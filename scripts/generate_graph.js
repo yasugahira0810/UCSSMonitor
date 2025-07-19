@@ -216,94 +216,29 @@ function prepareChartData(filteredData, timezone) {
     throw new Error('No data available to prepare chart');
   }
 
-  // null値をフィルタリングして、有効なデータポイントのみをChartJSに渡す
-  // ただし、nullの値は配列からは除外せず、スキップする形でマッピングする
-  const chartData = [];
-  let guidelineData = []; // 補助線用のデータ配列
-  
-  // データの増加を検出するための変数
-  let lastValidValue = null;
-  let lastValidTimestamp = null;
-  let dataIncreasePoint = null;
-  
-  filteredData.forEach(item => {
-    // nullまたは定義されていない値はスキップするが、グラフは連続して描画される
-    if (item.remainingData !== null && item.remainingData !== undefined) {
-      const timestamp = new Date(item.date).getTime();
-      const value = parseFloat(item.remainingData);
-      
-      chartData.push({
-        x: timestamp,
-        y: value
-      });
-      
-      // データの増加を検出
-      if (lastValidValue !== null && value > lastValidValue) {
-        // データ容量が増えたポイントを記録
-        dataIncreasePoint = {
-          timestamp: timestamp,
-          value: value
-        };
-      }
-      
-      lastValidValue = value;
-      lastValidTimestamp = timestamp;
-    }
+  // 現在の月の初日と最終日を計算
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+  // 月初から月末の範囲でデータをフィルタリング
+  const filteredByMonth = filteredData.filter(dataPoint => {
+    const date = new Date(dataPoint.date);
+    return date >= startOfMonth && date <= endOfMonth;
   });
-  
-  // データ容量増加時の補助線を作成
-  if (dataIncreasePoint) {
-    // 1ヶ月後の日時を計算
-    const oneMonthLater = new Date(dataIncreasePoint.timestamp);
-    oneMonthLater.setMonth(oneMonthLater.getMonth() + 1);
-    
-    // 補助線の始点と終点
-    guidelineData = [
-      { x: dataIncreasePoint.timestamp, y: dataIncreasePoint.value },
-      { x: oneMonthLater.getTime(), y: 0 } // 1ヶ月後に0GBになる直線
-    ];
+
+  if (filteredByMonth.length === 0) {
+    throw new Error('No data available for the current month');
   }
-  
-  // Y軸設定の計算（nullでない値のみで計算）
-  const values = filteredData
-    .filter(item => item.remainingData !== null && item.remainingData !== undefined)
-    .map(item => parseFloat(item.remainingData));
-  
-  if (values.length === 0) {
-    throw new Error('No valid data points available for chart preparation');
-  }
-  
-  const maxValue = Math.max(...values);
-  const yAxisSettings = calculateYAxisRange(maxValue);
-  
-  // 時間範囲の設定
-  const firstDataPoint = filteredData[0];
-  const lastDataPoint = filteredData[filteredData.length - 1];
-  const firstDate = new Date(firstDataPoint.date);
-  const lastDate = new Date(lastDataPoint.date);
-  const currentDate = new Date();
-  
-  // 現在から1ヶ月後の日時も計算
-  const oneMonthFromNow = new Date(currentDate);
-  oneMonthFromNow.setMonth(oneMonthFromNow.getMonth() + 1);
-  
-  const dateInfo = {
-    firstDate,
-    lastDate,
-    currentDate,
-    oneMonthFromNow,
-    firstDateFormatted: formatDateForInput(firstDate, timezone),
-    lastDateFormatted: formatDateForInput(lastDate, timezone),
-    currentDateFormatted: formatDateForInput(currentDate, timezone),
-    oneMonthFromNowFormatted: formatDateForInput(oneMonthFromNow, timezone)
-  };
-  
+
+  // フィルタリングされたデータを基にタイムスタンプと値を抽出
+  const timestamps = filteredByMonth.map(dataPoint => dataPoint.date);
+  const values = filteredByMonth.map(dataPoint => dataPoint.remainingData);
+
   return {
-    chartData,
-    guidelineData,
-    dateInfo,
-    axisSettings: yAxisSettings,
-    hasDataIncrease: !!dataIncreasePoint
+    timestamps,
+    values,
+    labels: timestamps.map(date => formatDate(date, timezone))
   };
 }
 
