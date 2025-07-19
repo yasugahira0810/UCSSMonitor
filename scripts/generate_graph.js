@@ -247,7 +247,7 @@ function formatDateForInput(date, timezone) {
 }
 
 // グラフデータの準備
-function prepareChartData(filteredData, timezone) {
+function prepareChartData(filteredData, timezone, xMin = null, xMax = null) {
   // データがない場合は、空のグラフデータを返す
   if (!filteredData || filteredData.length === 0) {
     return {
@@ -264,56 +264,52 @@ function prepareChartData(filteredData, timezone) {
   const allFirstDate = new Date(sortedAll[0].date);
   const allLastDate = new Date(sortedAll[sortedAll.length - 1].date);
 
-  // 現在の月の初日と最終日を計算
-  const now = new Date();
-  const startOfMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
-  const endOfMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0, 23, 59, 59, 999));
-  const oneMonthFromNow = new Date(now.getTime());
-  oneMonthFromNow.setMonth(oneMonthFromNow.getMonth() + 1);
-
-  // 月初から月末の範囲でデータをフィルタリング
-  const filteredByMonth = filteredData.filter(dataPoint => {
-    const date = new Date(dataPoint.date);
-    return date >= startOfMonth && date <= endOfMonth;
-  });
-
-  // 今月のデータがない場合は、空のグラフデータを返す
-  if (filteredByMonth.length === 0) {
-    return {
-      chartData: [],
-      guidelineData: [],
-      dateInfo: {
-        firstDate: startOfMonth,
-        lastDate: endOfMonth,
-        currentDate: now,
-        firstDateFormatted: formatDateForInput(startOfMonth, timezone),
-        lastDateFormatted: formatDateForInput(endOfMonth, timezone),
-        currentDateFormatted: formatDateForInput(now, timezone)
-      },
-      axisSettings: { yAxisMin: CONSTANTS.Y_AXIS.DEFAULT_MIN, yAxisMax: CONSTANTS.Y_AXIS.DEFAULT_MAX },
-      hasDataIncrease: false
-    };
-  }
-
-  // フィルタリングされたデータを基にタイムスタンプと値を抽出
-  const chartData = filteredByMonth
+  // chartDataは全期間分を返す
+  const chartData = sortedAll
     .map(dataPoint => ({
       x: new Date(dataPoint.date).getTime(),
       y: dataPoint.remainingData !== null ? parseFloat(dataPoint.remainingData) : null
     }))
     .filter(dataPoint => dataPoint.y !== null && !isNaN(dataPoint.y));
 
-  const values = chartData.map(point => point.y);
-  const maxValue = values.length > 0 ? Math.max(...values) : 0;
-  const axisSettings = calculateYAxisRange(maxValue);
+  // デフォルトの表示範囲（今月分）
+  const now = new Date();
+  const startOfMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+  const endOfMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0, 23, 59, 59, 999));
+  const oneMonthFromNow = new Date(now.getTime());
+  oneMonthFromNow.setMonth(oneMonthFromNow.getMonth() + 1);
 
+  // 今月分のデータがない場合も空配列を返す（ただしchartDataは全期間分）
+  const filteredByMonth = sortedAll.filter(dataPoint => {
+    const date = new Date(dataPoint.date);
+    return date >= startOfMonth && date <= endOfMonth;
+  });
+
+  // --- ここからY軸最大値の仕様変更 ---
+  // xMin, xMaxが指定されていればその範囲、なければデフォルト（今月分）
+  let rangeStart = xMin ? new Date(xMin) : (filteredByMonth.length > 0 ? new Date(filteredByMonth[0].date) : startOfMonth);
+  let rangeEnd = xMax ? new Date(xMax) : (filteredByMonth.length > 0 ? new Date(filteredByMonth[filteredByMonth.length - 1].date) : now);
+
+  // 表示範囲内のデータのみ抽出
+  const chartDataInRange = chartData.filter(point => {
+    const d = new Date(point.x);
+    return d >= rangeStart && d <= rangeEnd;
+  });
+  const valuesInRange = chartDataInRange.map(point => point.y);
+  const maxValueInRange = valuesInRange.length > 0 ? Math.max(...valuesInRange) : 0;
+  const axisSettings = calculateYAxisRange(maxValueInRange);
+  // --- ここまでY軸最大値の仕様変更 ---
+
+  // デフォルトのxMin/xMaxは今月分の範囲
+  let defaultXMin = rangeStart.getTime();
+  let defaultXMax = rangeEnd.getTime();
+
+  // 補助線・増加判定は全期間で
   const hasDataIncrease = chartData.some((point, index) => {
     if (index === 0) return false;
-    // 前のデータポイントも有効な数値であることを確認
     const prevPoint = chartData[index - 1];
     return point.y > prevPoint.y;
   });
-
   const guidelineData = [];
   if (hasDataIncrease) {
     const increasePoint = chartData.find((point, index) => {
@@ -333,12 +329,12 @@ function prepareChartData(filteredData, timezone) {
 
   // dateInfoに全期間のfirst/lastも含める
   const dateInfo = {
-    firstDate: startOfMonth,
-    lastDate: endOfMonth,
+    firstDate: new Date(defaultXMin),
+    lastDate: new Date(defaultXMax),
     currentDate: now,
     oneMonthFromNow: oneMonthFromNow,
-    firstDateFormatted: formatDateForInput(startOfMonth, timezone),
-    lastDateFormatted: formatDateForInput(endOfMonth, timezone),
+    firstDateFormatted: formatDateForInput(new Date(defaultXMin), timezone),
+    lastDateFormatted: formatDateForInput(new Date(defaultXMax), timezone),
     currentDateFormatted: formatDateForInput(now, timezone),
     oneMonthFromNowFormatted: formatDateForInput(oneMonthFromNow, timezone),
     allFirstDate,

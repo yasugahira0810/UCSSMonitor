@@ -341,13 +341,15 @@ describe('generate_graph.js', () => {
       const timezone = 'UTC';
       
       const result = prepareChartData(filteredData, timezone);
-      
+      // chartDataは全期間分
       expect(result.chartData).toEqual([
+        { x: new originalDate('2025-06-30T23:59:59Z').getTime(), y: 100 },
         { x: new originalDate('2025-07-01T00:00:00Z').getTime(), y: 90 },
         { x: new originalDate('2025-07-15T12:00:00Z').getTime(), y: 80 },
-        { x: new originalDate('2025-07-31T23:59:59Z').getTime(), y: 70 }
+        { x: new originalDate('2025-07-31T23:59:59Z').getTime(), y: 70 },
+        { x: new originalDate('2025-08-01T00:00:00Z').getTime(), y: 60 }
       ]);
-      expect(result.axisSettings.yAxisMax).toBe(100);
+      expect(result.axisSettings.yAxisMax).toBe(100); // 全期間の最大値でY軸が決まる
       // 月初の開始は 00:00 となるはず
       expect(result.dateInfo.firstDateFormatted).toBe('2025-07-01T00:00');
       // 月末の終了は 23:59 となるはず
@@ -362,8 +364,11 @@ describe('generate_graph.js', () => {
       const timezone = 'UTC';
       
       const result = prepareChartData(filteredData, timezone);
-      
-      expect(result.chartData).toEqual([]);
+      // chartDataは全期間分
+      expect(result.chartData).toEqual([
+        { x: new originalDate('2025-06-30T23:59:59Z').getTime(), y: 100 },
+        { x: new originalDate('2025-08-01T00:00:00Z').getTime(), y: 60 }
+      ]);
       expect(result.axisSettings.yAxisMax).toBe(100); // デフォルト値が100に変更されたため修正
     });
 
@@ -381,13 +386,13 @@ describe('generate_graph.js', () => {
     it('should adjust Y-axis settings for higher values', () => {
       const filteredData = [
         { date: '2025-07-01T00:00:00Z', remainingData: '120.5' },
-        { date: '2025-07-02T00:00:00Z', remainingData: '150.8' }
+        { date: '2025-07-02T00:00:00Z', remainingData: '100.8' }
       ];
       const timezone = 'UTC';
       
       const result = prepareChartData(filteredData, timezone);
       
-      expect(result.axisSettings.yAxisMax).toBe(200);
+      expect(result.axisSettings.yAxisMax).toBe(150); // 最大値120.5, 100.8→150GB
     });
 
     it('should create guideline data when data increase is detected', () => {
