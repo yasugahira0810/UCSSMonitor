@@ -8,7 +8,7 @@
     "start": "vue-cli-service serve",
     "build": "vue-cli-service build",
     "generate-graph": "node scripts/generate_graph.js",
-    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config=jest.config.js",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
     "deploy": "vue-cli-service build && git subtree push --prefix public origin gh-pages"
   },
   "dependencies": {
@@ -21,8 +21,6 @@
     "vue-chartjs": "^5.3.2"
   },
   "devDependencies": {
-    "@babel/core": "^7.26.10",
-    "@babel/preset-env": "^7.26.9",
     "@jest/expect": "^29.7.0",
     "@vue/cli-service": "^5.0.8",
     "babel-jest": "^29.7.0",
@@ -32,17 +30,5 @@
   },
   "engines": {
     "node": ">=18"
-  },
-  "babel": {
-    "presets": [
-      [
-        "@babel/preset-env",
-        {
-          "targets": {
-            "node": "current"
-          }
-        }
-      ]
-    ]
   }
 }

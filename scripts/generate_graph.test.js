@@ -296,467 +296,163 @@ describe('generate_graph.js', () => {
 
   // prepareChartData のテスト
   describe('prepareChartData', () => {
-    let originalDateNow;
-    let originalDate;
-    
+    const originalDate = global.Date;
+
+    // テストのたびにDateをモックする
     beforeEach(() => {
-      originalDateNow = Date.now;
-      originalDate = global.Date;
-      
-      // Mock Date.now() to return a fixed time
-      Date.now = jest.fn(() => 1672704000000); // '2023-01-03T00:00:00Z'
+      const mockDate = new Date('2025-07-19T00:00:00Z');
+      global.Date = class extends originalDate {
+        constructor(dateString) {
+          if (dateString) {
+            return new originalDate(dateString);
+          }
+          return mockDate;
+        }
+        static now() {
+          return mockDate.getTime();
+        }
+      };
     });
-    
+
     afterEach(() => {
-      Date.now = originalDateNow;
       global.Date = originalDate;
     });
     
-    it('should prepare chart data correctly', () => {
-      // Create test data
+    it('should filter data to the current month and prepare chart data', () => {
       const filteredData = [
-        { date: '2023-01-01T00:00:00Z', remainingData: '10.5' },
-        { date: '2023-01-02T00:00:00Z', remainingData: '9.8' }
+        { date: '2025-06-30T23:59:59Z', remainingData: '100' },
+        { date: '2025-07-01T00:00:00Z', remainingData: '90' },
+        { date: '2025-07-15T12:00:00Z', remainingData: '80' },
+        { date: '2025-07-31T23:59:59Z', remainingData: '70' },
+        { date: '2025-08-01T00:00:00Z', remainingData: '60' }
       ];
       const timezone = 'UTC';
       
-      // Properly mock Date constructor with all required methods
-      global.Date = jest.fn((arg) => {
-        if (arg === '2023-01-01T00:00:00Z') {
-          return {
-            getTime: () => 1672531200000, // '2023-01-01T00:00:00Z'
-            toLocaleString: () => '2023-01-01 00:00:00',
-            getFullYear: () => 2023,
-            getMonth: () => 0,
-            getDate: () => 1,
-            getHours: () => 0,
-            getMinutes: () => 0,
-            setMonth: function(month) { 
-              this.month = month;
-              return this;
-            }
-          };
-        } else if (arg === '2023-01-02T00:00:00Z') {
-          return {
-            getTime: () => 1672617600000, // '2023-01-02T00:00:00Z' 
-            toLocaleString: () => '2023-01-02 00:00:00',
-            getFullYear: () => 2023,
-            getMonth: () => 0,
-            getDate: () => 2,
-            getHours: () => 0,
-            getMinutes: () => 0,
-            setMonth: function(month) { 
-              this.month = month;
-              return this;
-            }
-          };
-        } else if (arg && typeof arg === 'object' && arg.getTime) {
-          // Handle Date object as argument (for oneMonthFromNow)
-          return {
-            getTime: () => arg.getTime() + 2592000000, // Add 30 days
-            toLocaleString: () => '2023-02-03 00:00:00',
-            getFullYear: () => 2023,
-            getMonth: () => 1,
-            getDate: () => 3,
-            getHours: () => 0,
-            getMinutes: () => 0,
-            setMonth: function(month) { 
-              this.month = month;
-              return this;
-            }
-          };
-        } else {
-          return {
-            getTime: () => 1672704000000, // '2023-01-03T00:00:00Z' (current date)
-            toLocaleString: () => '2023-01-03 00:00:00',
-            getFullYear: () => 2023,
-            getMonth: () => 0,
-            getDate: () => 3,
-            getHours: () => 0,
-            getMinutes: () => 0,
-            setMonth: function(month) { 
-              this.month = month;
-              return this;
-            }
-          };
-        }
-      });
-      
-      // Keep the static methods
-      global.Date.now = Date.now;
-      global.Date.UTC = originalDate.UTC;
-      global.Date.parse = originalDate.parse;
-      
-      // Run the test
       const result = prepareChartData(filteredData, timezone);
       
-      // Test chart data
-      expect(result.chartData).toHaveLength(2);
-      
-      // Test axis settings
-      expect(result.axisSettings.yAxisMin).toBe(0);
-      expect(result.axisSettings.yAxisMax).toBe(50);
-      
-      // Test date info exists
-      expect(result.dateInfo).toBeDefined();
+      expect(result.chartData).toEqual([
+        { x: new originalDate('2025-07-01T00:00:00Z').getTime(), y: 90 },
+        { x: new originalDate('2025-07-15T12:00:00Z').getTime(), y: 80 },
+        { x: new originalDate('2025-07-31T23:59:59Z').getTime(), y: 70 }
+      ]);
+      expect(result.axisSettings.yAxisMax).toBe(100);
+      expect(result.dateInfo.firstDateFormatted).toBe('2025-07-01T00:00');
+      // In UTC, the last day of July is the 31st, and the time should be at the end of the day.
+      expect(result.dateInfo.lastDateFormatted).toBe('2025-07-31T23:59');
     });
     
-    it('should handle empty data array', () => {
+    it('should return an empty state if no data is available for the current month', () => {
+      const filteredData = [
+        { date: '2025-06-30T23:59:59Z', remainingData: '100' },
+        { date: '2025-08-01T00:00:00Z', remainingData: '60' }
+      ];
+      const timezone = 'UTC';
+      
+      const result = prepareChartData(filteredData, timezone);
+      
+      expect(result.chartData).toEqual([]);
+      expect(result.axisSettings.yAxisMax).toBe(50);
+    });
+
+    it('should handle empty data array by returning an empty state', () => {
       const filteredData = [];
       const timezone = 'UTC';
       
-      // 空配列の場合はエラーが発生する可能性があるため、try-catchで囲む
-      expect(() => {
-        prepareChartData(filteredData, timezone);
-      }).toThrow(); // エラーが発生することを期待
+      const result = prepareChartData(filteredData, timezone);
+      
+      expect(result.chartData).toEqual([]);
+      expect(result.guidelineData).toEqual([]);
+      expect(result.hasDataIncrease).toBe(false);
     });
     
     it('should adjust Y-axis settings for higher values', () => {
-      // Create test data with high values
       const filteredData = [
-        { date: '2023-01-01T00:00:00Z', remainingData: '120.5' },
-        { date: '2023-01-02T00:00:00Z', remainingData: '150.8' }
+        { date: '2025-07-01T00:00:00Z', remainingData: '120.5' },
+        { date: '2025-07-02T00:00:00Z', remainingData: '150.8' }
       ];
       const timezone = 'UTC';
-      
-      // Properly mock Date constructor for specific timestamps
-      global.Date = jest.fn((arg) => {
-        if (arg === '2023-01-01T00:00:00Z') {
-          return {
-            getTime: () => 1672531200000,
-            toLocaleString: () => '2023-01-01 00:00:00',
-            getFullYear: () => 2023,
-            getMonth: () => 0,
-            getDate: () => 1,
-            getHours: () => 0,
-            getMinutes: () => 0,
-            setMonth: function(month) {
-              this.month = month;
-              return this;
-            }
-          };
-        } else if (arg === '2023-01-02T00:00:00Z') {
-          return {
-            getTime: () => 1672617600000,
-            toLocaleString: () => '2023-01-02 00:00:00',
-            getFullYear: () => 2023,
-            getMonth: () => 0,
-            getDate: () => 2,
-            getHours: () => 0,
-            getMinutes: () => 0,
-            setMonth: function(month) {
-              this.month = month;
-              return this;
-            }
-          };
-        } else if (arg && typeof arg === 'object' && arg.getTime) {
-          // Handle Date object as argument (for oneMonthLater)
-          return {
-            getTime: () => arg.getTime() + 2592000000, // Add 30 days
-            toLocaleString: () => '2023-02-03 00:00:00',
-            getFullYear: () => 2023,
-            getMonth: () => 1,
-            getDate: () => 3,
-            getHours: () => 0,
-            getMinutes: () => 0,
-            setMonth: function(month) {
-              this.month = month;
-              return this;
-            }
-          };
-        } else {
-          return {
-            getTime: () => 1672704000000,
-            toLocaleString: () => '2023-01-03 00:00:00',
-            getFullYear: () => 2023,
-            getMonth: () => 0,
-            getDate: () => 3,
-            getHours: () => 0,
-            getMinutes: () => 0,
-            setMonth: function(month) {
-              this.month = month;
-              return this;
-            }
-          };
-        }
-      });
-      
-      // Keep the static methods
-      global.Date.now = Date.now;
-      global.Date.UTC = originalDate.UTC;
-      global.Date.parse = originalDate.parse;
       
       const result = prepareChartData(filteredData, timezone);
       
-      // Test for higher Y-axis maximum
       expect(result.axisSettings.yAxisMax).toBe(200);
     });
 
-    // 補助線のテスト（データ量が増加した場合）
     it('should create guideline data when data increase is detected', () => {
-      // Create test data with increasing values to trigger guideline generation
       const filteredData = [
-        { date: '2023-01-01T00:00:00Z', remainingData: '10.5' },
-        { date: '2023-01-02T00:00:00Z', remainingData: '8.7' },
-        { date: '2023-01-03T00:00:00Z', remainingData: '20.0' } // データ増加
+        { date: '2025-07-01T00:00:00Z', remainingData: '10.5' },
+        { date: '2025-07-02T00:00:00Z', remainingData: '8.7' },
+        { date: '2025-07-03T00:00:00Z', remainingData: '20.0' }
       ];
       const timezone = 'UTC';
       
-      // Mock Date constructor for specific timestamps
-      const originalDate = global.Date;
+      const result = prepareChartData(filteredData, timezone);
       
-      // Mock implementation for Date
-      const mockDate = function(arg) {
-        if (arg === '2023-01-01T00:00:00Z') {
-          return {
-            getTime: () => 1672531200000, // '2023-01-01T00:00:00Z'
-            toLocaleString: () => '2023-01-01 00:00:00',
-            getFullYear: () => 2023,
-            getMonth: () => 0,
-            getDate: () => 1,
-            getHours: () => 0,
-            getMinutes: () => 0,
-            setMonth: function(month) { 
-              // Add setMonth method
-              this.month = month;
-              return this;
-            },
-            getTime: function() {
-              return 1672531200000;
-            }
-          };
-        } else if (arg === '2023-01-02T00:00:00Z') {
-          return {
-            getTime: () => 1672617600000, // '2023-01-02T00:00:00Z' 
-            toLocaleString: () => '2023-01-02 00:00:00',
-            getFullYear: () => 2023,
-            getMonth: () => 0,
-            getDate: () => 2,
-            getHours: () => 0,
-            getMinutes: () => 0,
-            setMonth: function(month) { 
-              // Add setMonth method
-              this.month = month;
-              return this;
-            },
-            getTime: function() {
-              return 1672617600000;
-            }
-          };
-        } else if (arg === '2023-01-03T00:00:00Z') {
-          return {
-            getTime: () => 1672704000000, // '2023-01-03T00:00:00Z'
-            toLocaleString: () => '2023-01-03 00:00:00',
-            getFullYear: () => 2023,
-            getMonth: () => 0,
-            getDate: () => 3,
-            getHours: () => 0,
-            getMinutes: () => 0,
-            setMonth: function(month) { 
-              // Add setMonth method
-              this.month = month;
-              return this;
-            },
-            getTime: function() {
-              return 1672704000000;
-            }
-          };
-        } else if (arg && arg.getTime) {
-          // Handle Date object as argument
-          return {
-            getTime: () => arg.getTime() + 2592000000, // Add 30 days (1 month)
-            toLocaleString: () => '2023-02-03 00:00:00',
-            getFullYear: () => 2023,
-            getMonth: () => 1,
-            getDate: () => 3,
-            getHours: () => 0,
-            getMinutes: () => 0,
-            setMonth: function(month) { 
-              this.month = month;
-              return this;
-            },
-            getTime: function() {
-              return arg.getTime() + 2592000000; // Add 30 days (1 month)
-            }
-          };
-        } else {
-          return {
-            getTime: () => 1672704000000, // Default to '2023-01-03T00:00:00Z'
-            toLocaleString: () => '2023-01-03 00:00:00',
-            getFullYear: () => 2023,
-            getMonth: () => 0,
-            getDate: () => 3,
-            getHours: () => 0,
-            getMinutes: () => 0,
-            setMonth: function(month) { 
-              this.month = month;
-              return this;
-            },
-            getTime: function() {
-              return 1672704000000;
-            }
-          };
-        }
-      };
+      expect(result.hasDataIncrease).toBe(true);
+      expect(result.guidelineData).toBeDefined();
+      expect(result.guidelineData.length).toBe(2);
+      expect(result.guidelineData[0].x).toBe(new originalDate('2025-07-03T00:00:00Z').getTime());
+      expect(result.guidelineData[0].y).toBe(20.0);
+      expect(result.guidelineData[1].y).toBe(0);
+    });
+
+    it('should handle data with null or invalid remainingData values', () => {
+      const filteredData = [
+        { date: '2025-07-01T00:00:00Z', remainingData: '10.5' },
+        { date: '2025-07-02T01:00:00Z', remainingData: null },
+        { date: '2025-07-03T02:00:00Z', remainingData: 'invalid' },
+        { date: '2025-07-04T03:00:00Z', remainingData: '9.8' }
+      ];
+      const timezone = 'UTC';
       
-      // Add static methods
-      mockDate.now = () => 1672704000000; // '2023-01-03T00:00:00Z'
+      const result = prepareChartData(filteredData, timezone);
       
-      // Replace global Date
-      global.Date = mockDate;
-      
-      try {
-        // Run the test
-        const result = prepareChartData(filteredData, timezone);
-        
-        // Test chart data
-        expect(result.chartData).toHaveLength(3);
-        
-        // Verify that hasDataIncrease flag is set to true
-        expect(result.hasDataIncrease).toBe(true);
-        
-        // Verify guideline data exists and has correct structure
-        expect(result.guidelineData).toBeDefined();
-        expect(result.guidelineData.length).toBe(2);
-        
-        // Check guideline start point (should be at the point of increase)
-        expect(result.guidelineData[0].x).toBe(1672704000000); // 2023-01-03
-        expect(result.guidelineData[0].y).toBe(20.0);
-        
-        // Check guideline end point (should be one month later, y=0)
-        expect(result.guidelineData[1].y).toBe(0);
-      } finally {
-        // Restore original Date
-        global.Date = originalDate;
-      }
+      expect(result.chartData).toHaveLength(2);
+      expect(result.chartData[0].y).toBe(10.5);
+      expect(result.chartData[1].y).toBe(9.8);
     });
   });
 
   // prepareChartData null handling のテスト
   describe('prepareChartData null handling', () => {
+    const originalDate = global.Date;
+
+    // テストのたびにDateをモックする
+    beforeEach(() => {
+      const mockDate = new Date('2025-07-19T00:00:00Z');
+      global.Date = class extends originalDate {
+        constructor(dateString) {
+          if (dateString) {
+            return new originalDate(dateString);
+          }
+          return mockDate;
+        }
+        static now() {
+          return mockDate.getTime();
+        }
+      };
+    });
+
+    afterEach(() => {
+      global.Date = originalDate;
+    });
+
     it('should handle data with null remainingData values', () => {
-      // Create test data with null values
       const filteredData = [
-        { date: '2023-01-01T00:00:00Z', remainingData: '10.5' },
-        { date: '2023-01-01T01:00:00Z', remainingData: null },
-        { date: '2023-01-01T02:00:00Z', remainingData: null },
-        { date: '2023-01-01T03:00:00Z', remainingData: '9.8' }
+        { date: '2025-07-01T00:00:00Z', remainingData: '10.5' },
+        { date: '2025-07-02T01:00:00Z', remainingData: null },
+        { date: '2025-07-03T02:00:00Z', remainingData: 'invalid' },
+        { date: '2025-07-04T03:00:00Z', remainingData: '9.8' }
       ];
       const timezone = 'UTC';
       
-      // Mock Date constructor for specific timestamps
-      const originalDate = global.Date;
+      const result = prepareChartData(filteredData, timezone);
       
-      // Mock implementation for Date
-      const mockDate = function(arg) {
-        if (arg === '2023-01-01T00:00:00Z') {
-          return {
-            getTime: () => 1672531200000, // '2023-01-01T00:00:00Z'
-            toLocaleString: () => '2023-01-01 00:00:00',
-            getFullYear: () => 2023,
-            getMonth: () => 0,
-            getDate: () => 1,
-            getHours: () => 0,
-            getMinutes: () => 0,
-            setMonth: function(month) {
-              this.month = month;
-              return this;
-            }
-          };
-        } else if (arg === '2023-01-01T01:00:00Z') {
-          return {
-            getTime: () => 1672534800000,
-            toLocaleString: () => '2023-01-01 01:00:00',
-            getFullYear: () => 2023,
-            getMonth: () => 0,
-            getDate: () => 1,
-            getHours: () => 1,
-            getMinutes: () => 0,
-            setMonth: function(month) {
-              this.month = month;
-              return this;
-            }
-          };
-        } else if (arg === '2023-01-01T02:00:00Z') {
-          return {
-            getTime: () => 1672538400000,
-            toLocaleString: () => '2023-01-01 02:00:00',
-            getFullYear: () => 2023,
-            getMonth: () => 0,
-            getDate: () => 1,
-            getHours: () => 2,
-            getMinutes: () => 0,
-            setMonth: function(month) {
-              this.month = month;
-              return this;
-            }
-          };
-        } else if (arg === '2023-01-01T03:00:00Z') {
-          return {
-            getTime: () => 1672542000000,
-            toLocaleString: () => '2023-01-01 03:00:00',
-            getFullYear: () => 2023,
-            getMonth: () => 0,
-            getDate: () => 1,
-            getHours: () => 3,
-            getMinutes: () => 0,
-            setMonth: function(month) {
-              this.month = month;
-              return this;
-            }
-          };
-        } else if (arg && arg.getTime) {
-          // Handle Date object as argument
-          return {
-            getTime: () => arg.getTime() + 2592000000, // Add 30 days (1 month)
-            toLocaleString: () => '2023-02-01 00:00:00',
-            getFullYear: () => 2023,
-            getMonth: () => 1,
-            getDate: () => 1,
-            getHours: () => 0,
-            getMinutes: () => 0,
-            setMonth: function(month) {
-              this.month = month;
-              return this;
-            }
-          };
-        } else {
-          return {
-            getTime: () => 1672542000000, // Default to '2023-01-01T03:00:00Z'
-            toLocaleString: () => '2023-01-01 03:00:00',
-            getFullYear: () => 2023,
-            getMonth: () => 0,
-            getDate: () => 1,
-            getHours: () => 3,
-            getMinutes: () => 0,
-            setMonth: function(month) {
-              this.month = month;
-              return this;
-            }
-          };
-        }
-      };
+      // Test chart data
+      expect(result.chartData).toHaveLength(2);
       
-      // Add static methods
-      mockDate.now = () => 1672542000000; // '2023-01-01T03:00:00Z'
-      
-      // Replace global Date
-      global.Date = mockDate;
-      
-      try {
-        // Run the test
-        const result = prepareChartData(filteredData, timezone);
-        
-        // Test chart data
-        expect(result.chartData).toHaveLength(2);
-        
-        // Check that null values were skipped and only valid values were included
-        expect(result.chartData[0].y).toBe(10.5);
-        expect(result.chartData[1].y).toBe(9.8);
-      } finally {
-        // Restore original Date
-        global.Date = originalDate;
-      }
+      // Check that null values were skipped and only valid values were included
+      expect(result.chartData[0].y).toBe(10.5);
+      expect(result.chartData[1].y).toBe(9.8);
     });
   });
 
@@ -1069,7 +765,7 @@ describe('generate_graph.js', () => {
       
       // fetchのモックをセットアップ
       const mockData = [
-        { date: '2023-01-01T00:00:00Z', remainingData: '10.5' }
+        { date: '2025-07-01T00:00:00Z', remainingData: '10.5' }
       ];
       const mockResponse = {
         ok: true,
@@ -1079,20 +775,19 @@ describe('generate_graph.js', () => {
       fetchMock.mockResolvedValue(mockResponse);
 
       // Date の適切なモック
-      global.Date = jest.fn(() => ({
-        getTime: () => 1672531200000,
-        toLocaleString: () => '2023-01-01 00:00:00',
-        getFullYear: () => 2023,
-        getMonth: () => 0,
-        getDate: () => 1,
-        getHours: () => 0,
-        getMinutes: () => 0,
-        setMonth: function(month) {
-          this.month = month;
-          return this;
+      const mockCurrentDate = new Date('2025-07-19T00:00:00Z');
+      const originalDate = global.Date;
+      global.Date = class extends originalDate {
+        constructor(dateString) {
+          if (dateString) {
+            return new originalDate(dateString);
+          }
+          return mockCurrentDate;
         }
-      }));
-      global.Date.now = () => 1672531200000;
+        static now() {
+          return mockCurrentDate.getTime();
+        }
+      };
     });
     
     afterEach(() => {
@@ -1103,9 +798,9 @@ describe('generate_graph.js', () => {
     
     it('should process data flow correctly', async () => {
       // モックでHTMLの生成ログを出力するように設定
-      fsMock.writeFileSync.mockImplementation(() => {
-        console.log('Chart HTML generated successfully at: ./docs/index.html');
-        console.log('Generated chart with 1 data points');
+      fsMock.writeFileSync.mockImplementation((path, content) => {
+        console.log(`Chart HTML generated successfully at: ${path}`);
+        console.log(`Generated chart with 1 data points`);
       });
       
       // テスト実行
@@ -1116,7 +811,7 @@ describe('generate_graph.js', () => {
       
       // コンソールログの内容を確認
       const allCalls = consoleLogMock.mock.calls.flat().join(' ');
-      expect(allCalls).toContain('Chart HTML generated successfully');
+      expect(allCalls).toContain('Chart HTML generated successfully at: ./docs/index.html');
     });
     
     it('should handle errors gracefully', async () => {

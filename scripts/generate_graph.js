@@ -212,14 +212,23 @@ function formatDateForInput(date, timezone) {
 
 // グラフデータの準備
 function prepareChartData(filteredData, timezone) {
+  // データがない場合は、空のグラフデータを返す
   if (!filteredData || filteredData.length === 0) {
-    throw new Error('No data available to prepare chart');
+    return {
+      chartData: [],
+      guidelineData: [],
+      dateInfo: {},
+      axisSettings: { yAxisMin: 0, yAxisMax: 50 },
+      hasDataIncrease: false
+    };
   }
 
   // 現在の月の初日と最終日を計算
   const now = new Date();
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-  const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  const startOfMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+  const endOfMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0, 23, 59, 59, 999));
+  const oneMonthFromNow = new Date(now.getTime());
+  oneMonthFromNow.setMonth(oneMonthFromNow.getMonth() + 1);
 
   // 月初から月末の範囲でデータをフィルタリング
   const filteredByMonth = filteredData.filter(dataPoint => {
@@ -227,18 +236,77 @@ function prepareChartData(filteredData, timezone) {
     return date >= startOfMonth && date <= endOfMonth;
   });
 
+  // 今月のデータがない場合は、空のグラフデータを返す
   if (filteredByMonth.length === 0) {
-    throw new Error('No data available for the current month');
+    return {
+      chartData: [],
+      guidelineData: [],
+      dateInfo: {
+        firstDate: startOfMonth,
+        lastDate: endOfMonth,
+        currentDate: now,
+        firstDateFormatted: formatDateForInput(startOfMonth, timezone),
+        lastDateFormatted: formatDateForInput(endOfMonth, timezone),
+        currentDateFormatted: formatDateForInput(now, timezone)
+      },
+      axisSettings: { yAxisMin: 0, yAxisMax: 50 },
+      hasDataIncrease: false
+    };
   }
 
   // フィルタリングされたデータを基にタイムスタンプと値を抽出
-  const timestamps = filteredByMonth.map(dataPoint => dataPoint.date);
-  const values = filteredByMonth.map(dataPoint => dataPoint.remainingData);
+  const chartData = filteredByMonth
+    .map(dataPoint => ({
+      x: new Date(dataPoint.date).getTime(),
+      y: dataPoint.remainingData !== null ? parseFloat(dataPoint.remainingData) : null
+    }))
+    .filter(dataPoint => dataPoint.y !== null && !isNaN(dataPoint.y));
+
+  const values = chartData.map(point => point.y);
+  const maxValue = values.length > 0 ? Math.max(...values) : 0;
+  const axisSettings = calculateYAxisRange(maxValue);
+
+  const hasDataIncrease = chartData.some((point, index) => {
+    if (index === 0) return false;
+    // 前のデータポイントも有効な数値であることを確認
+    const prevPoint = chartData[index - 1];
+    return point.y > prevPoint.y;
+  });
+
+  const guidelineData = [];
+  if (hasDataIncrease) {
+    const increasePoint = chartData.find((point, index) => {
+      if (index === 0) return false;
+      const prevPoint = chartData[index - 1];
+      return point.y > prevPoint.y;
+    });
+    if (increasePoint) {
+      const guidelineEndDate = new Date(increasePoint.x);
+      guidelineEndDate.setMonth(guidelineEndDate.getMonth() + 1);
+      guidelineData.push(
+        { x: increasePoint.x, y: increasePoint.y },
+        { x: guidelineEndDate.getTime(), y: 0 }
+      );
+    }
+  }
+
+  const dateInfo = {
+    firstDate: startOfMonth,
+    lastDate: endOfMonth,
+    currentDate: now,
+    oneMonthFromNow: oneMonthFromNow,
+    firstDateFormatted: formatDateForInput(startOfMonth, timezone),
+    lastDateFormatted: formatDateForInput(endOfMonth, timezone),
+    currentDateFormatted: formatDateForInput(now, timezone),
+    oneMonthFromNowFormatted: formatDateForInput(oneMonthFromNow, timezone)
+  };
 
   return {
-    timestamps,
-    values,
-    labels: timestamps.map(date => formatDate(date, timezone))
+    chartData,
+    guidelineData,
+    dateInfo,
+    axisSettings,
+    hasDataIncrease
   };
 }
 
@@ -909,7 +977,7 @@ function generateAndSaveHtml(chartData, guidelineData, dateInfo, axisSettings, f
                 }
                 
                 if (chartSettings.yMin >= chartSettings.yMax) {
-                    alert('Y軸の最小値は最大値より小さくしてください');
+                    alert('Y軸の最小値は最大値より小くしてください');
                     return;
                 }
                 

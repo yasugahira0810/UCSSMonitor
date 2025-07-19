@@ -1,7 +1,5 @@
 export default {
-  transform: {
-    '^.+\\.m?[tj]sx?$': 'babel-jest',
-  },
+  transform: {},
   testEnvironment: 'node',
   extensionsToTreatAsEsm: ['.ts'],
   moduleNameMapper: {
