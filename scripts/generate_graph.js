@@ -950,8 +950,8 @@ function generateAndSaveHtml(chartData, guidelineData, dateInfo, axisSettings, f
                         
                         // NaNチェック
                         if (isNaN(xMaxValue)) {
-                            alert('終了日時が正しく入力されていません。');
-                            return;
+                          alert('終了日時が正しく入力されていません。');
+                          return;
                         }
                         
                         chartSettings.xMax = xMaxValue;
