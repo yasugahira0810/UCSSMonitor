@@ -67,7 +67,12 @@ jobs:
       - name: Check scraper output
         run: |
           if [ "${{ steps.run_scraper.outputs.remainingData }}" = "" ]; then
-            echo "Login might have failed or data not retrieved."
+            echo "[CI-ERROR] Scraper output is empty."
+            echo "[CI-ERROR] Possible reasons:"
+            echo "  - [LOGIN_FAIL] Login failed (see '[ERROR] LOGIN:' or '[ERROR] ENV:' in log)"
+            echo "  - [SELECTOR_FAIL] Selector not found (see '[ERROR] STRUCTURE:' in log)"
+            echo "  - [DATA_FAIL] Data element missing or empty (see '[ERROR] DATA:' in log)"
+            echo "Check the previous log output for details."
             exit 1
           fi
           
