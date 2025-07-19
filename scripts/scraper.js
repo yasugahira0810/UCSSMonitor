@@ -65,35 +65,54 @@ const isLoggedIn = async (page) => {
  */
 const login = async (page, email, password) => {
   try {
+    // 環境変数の状態をログ出力（値はマスク）
+    console.log(`[DEBUG] UCSS_EMAIL: ${email ? '***' : '未設定'}, UCSS_PASSWORD: ${password ? '***' : '未設定'}`);
     if (!email || !password) {
+      console.log('[ERROR] 環境変数（UCSS_EMAIL, UCSS_PASSWORD）が未設定または間違いです');
       throw new Error('環境変数 UCSS_EMAIL または UCSS_PASSWORD が設定されていません');
     }
 
     await page.goto(URLS.login);
-    
-    await waitForSelector(page, SELECTORS.emailInput, TIMEOUT.short, 'メールアドレス入力フィールドが見つかりません');
-    await waitForSelector(page, SELECTORS.passwordInput, TIMEOUT.short, 'パスワード入力フィールドが見つかりません');
-    await waitForSelector(page, SELECTORS.loginButton, TIMEOUT.short, 'ログインボタンが見つかりません');
-    
+    try {
+      await waitForSelector(page, SELECTORS.emailInput, TIMEOUT.short, 'メールアドレス入力フィールドが見つかりません');
+    } catch (e) {
+      console.log(`[ERROR] サイト構造の変化: emailInputセレクタ(${SELECTORS.emailInput})が見つかりません`);
+      throw e;
+    }
+    try {
+      await waitForSelector(page, SELECTORS.passwordInput, TIMEOUT.short, 'パスワード入力フィールドが見つかりません');
+    } catch (e) {
+      console.log(`[ERROR] サイト構造の変化: passwordInputセレクタ(${SELECTORS.passwordInput})が見つかりません`);
+      throw e;
+    }
+    try {
+      await waitForSelector(page, SELECTORS.loginButton, TIMEOUT.short, 'ログインボタンが見つかりません');
+    } catch (e) {
+      console.log(`[ERROR] サイト構造の変化: loginButtonセレクタ(${SELECTORS.loginButton})が見つかりません`);
+      throw e;
+    }
+
     await page.type(SELECTORS.emailInput, email);
     await page.type(SELECTORS.passwordInput, password);
     await page.click(SELECTORS.loginButton);
     await page.waitForNavigation({ timeout: TIMEOUT.medium });
-    
+
     // Check for login errors
     const errorMessageElement = await page.$(SELECTORS.loginErrorMessage);
     if (errorMessageElement) {
       const errorMessageText = await page.evaluate(el => el.innerText, errorMessageElement);
       if (errorMessageText.includes('ログイン失敗') || errorMessageText.includes('エラー')) {
+        console.log(`[ERROR] ログイン失敗: ${errorMessageText}`);
         throw new Error(`ログイン失敗: ${errorMessageText}`);
       }
     }
-    
+
     if (!(await isLoggedIn(page))) {
+      console.log('[ERROR] ログイン後のページに必要な要素が見つかりません');
       throw new Error('ログイン後のページに必要な要素が見つかりません');
     }
-    
-    console.log(`ログイン成功: ${page.url()}`);
+
+    console.log(`[INFO] ログイン成功: ${page.url()}`);
   } catch (error) {
     await logErrorDetails(page, error.message);
     throw error;
