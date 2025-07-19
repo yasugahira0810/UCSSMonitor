@@ -1,0 +1,39 @@
+name: Update README Version Badge
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+jobs:
+  update-readme-version:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Get latest tag
+        id: get_tag
+        run: |
+          echo "tag=$(git describe --tags --abbrev=0)" >> $GITHUB_OUTPUT
+
+      - name: Update README version badge
+        run: node scripts/update_readme_version.js ${{ steps.get_tag.outputs.tag }}
+
+      - name: Commit and push changes
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "actions@github.com"
+          git add README.md
+          git commit -m "Update version badge in README.md to ${{ steps.get_tag.outputs.tag }} [skip ci]" || echo "No changes to commit"
+          git push origin HEAD:main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

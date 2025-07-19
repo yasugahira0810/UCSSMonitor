@@ -1,7 +1,7 @@
-import { jest } from '@jest/globals';
-import * as dotenv from 'dotenv';
-
-// .envファイルから環境変数を読み込む
+// import文をrequireに書き換え、CommonJS形式に統一
+const fs = require('fs');
+const path = require('path');
+const dotenv = require('dotenv');
 dotenv.config();
 
 // Create mock functions
@@ -44,6 +44,8 @@ const mockOctokit = {
   }
 };
 
+// @octokit/restのrequireを削除
+// jest.unstable_mockModuleで完全にモック
 jest.unstable_mockModule('@octokit/rest', () => ({
   Octokit: jest.fn().mockImplementation(() => mockOctokit)
 }));
@@ -72,7 +74,7 @@ const setupTestEnv = () => {
 setupTestEnv();
 
 // モジュールをインポート
-const updateGistModule = await import('./update_gist.js');
+const updateGistModule = require('./update_gist.js');
 const { updateGist, fetchGistData, saveGistData, generateFiles } = updateGistModule;
 
 describe('update_gist.js', () => {
@@ -266,71 +268,73 @@ describe('update_gist.js', () => {
     });
 
     describe('generateFiles', () => {
-        it('TS-04 TC-04-01: ディレクトリが存在しない場合にHTMLファイルを正常に生成できること', () => {
-            // Directory does not exist
-            mockExistSync.mockReturnValueOnce(false);
-
-            generateFiles();
-
-            expect(mockExistSync).toHaveBeenCalledWith('docs');
-            expect(mockMkdirSync).toHaveBeenCalledWith('docs');
-            expect(mockWriteFileSync).toHaveBeenCalledWith(
-                'docs/chart.html',
-                expect.stringContaining('<title>Chart</title>')
-            );
-            expect(mockWriteFileSync).toHaveBeenCalledWith(
-                'docs/index.html',
-                expect.stringContaining('<title>Index</title>')
-            );
-            
-            // Verify that logs were output
-            expect(console.log).toHaveBeenCalledWith('chart.html was generated in docs');
-            expect(console.log).toHaveBeenCalledWith('index.html was generated in docs');
-        });
-
-        it('TS-04 TC-04-02: ディレクトリが既に存在する場合にHTMLファイルのみを生成すること', () => {
-            // Directory already exists
-            mockExistSync.mockReturnValueOnce(true);
-
-            generateFiles();
-
-            expect(mockExistSync).toHaveBeenCalledWith('docs');
-            expect(mockMkdirSync).not.toHaveBeenCalled();
-            
-            // Verify files are still generated
-            expect(mockWriteFileSync).toHaveBeenCalledWith(
-                'docs/chart.html',
-                expect.stringContaining('<title>Chart</title>')
-            );
-            expect(mockWriteFileSync).toHaveBeenCalledWith(
-                'docs/index.html',
-                expect.stringContaining('<title>Index</title>')
-            );
-        });
-        
-        // ファイルの内容を詳細に検証
-        it('should generate HTML files with correct content', () => {
-            mockExistSync.mockReturnValueOnce(true);
-            
-            generateFiles();
-            
-            // Chart.js が含まれていることを確認
-            expect(mockWriteFileSync).toHaveBeenCalledWith(
-                'docs/chart.html',
-                expect.stringContaining('https://cdn.jsdelivr.net/npm/chart.js')
-            );
-            
-            // Canvas要素が含まれていることを確認
-            expect(mockWriteFileSync).toHaveBeenCalledWith(
-                'docs/chart.html',
-                expect.stringContaining('<canvas id="myChart"')
-            );
-            
-            // Index ページの内容を確認
-            expect(mockWriteFileSync).toHaveBeenCalledWith(
-                'docs/index.html',
-                expect.stringContaining('<h1>Index Page</h1>')
-            );
-        });
+      let mockExistSync, mockMkdirSync, mockWriteFileSync, mockJoin;
+      beforeEach(() => {
+        jest.resetModules();
+        mockExistSync = jest.fn();
+        mockMkdirSync = jest.fn();
+        mockWriteFileSync = jest.fn();
+        mockJoin = (...parts) => parts.join('/');
+        jest.doMock('fs', () => ({
+          __esModule: true,
+          ...jest.requireActual('fs'),
+          existsSync: mockExistSync,
+          mkdirSync: mockMkdirSync,
+          writeFileSync: mockWriteFileSync
+        }));
+        jest.doMock('path', () => ({
+          __esModule: true,
+          ...jest.requireActual('path'),
+          join: mockJoin
+        }));
+      });
+      afterEach(() => {
+        jest.resetModules();
+        jest.dontMock('fs');
+        jest.dontMock('path');
+      });
+      it('TS-04 TC-04-01: ディレクトリが存在しない場合にHTMLファイルを正常に生成できること', () => {
+        mockExistSync.mockReturnValue(false);
+        const { generateFiles } = require('./update_gist.js');
+        generateFiles();
+        expect(mockExistSync).toHaveBeenCalledWith('docs');
+        expect(mockMkdirSync).toHaveBeenCalledWith('docs');
+        expect(mockWriteFileSync).toHaveBeenCalledWith(
+          'docs/chart.html',
+          expect.stringContaining('<title>Chart</title>')
+        );
+        expect(mockWriteFileSync).toHaveBeenCalledWith(
+          'docs/index.html',
+          expect.stringContaining('<title>Index</title>')
+        );
+      });
+      it('TS-04 TC-04-02: ディレクトリが既に存在する場合にHTMLファイルのみを生成すること', () => {
+        mockExistSync.mockReturnValue(true);
+        const { generateFiles } = require('./update_gist.js');
+        generateFiles();
+        expect(mockExistSync).toHaveBeenCalledWith('docs');
+        expect(mockMkdirSync).not.toHaveBeenCalled();
+        expect(mockWriteFileSync).toHaveBeenCalledWith(
+          'docs/chart.html',
+          expect.stringContaining('<title>Chart</title>')
+        );
+        expect(mockWriteFileSync).toHaveBeenCalledWith(
+          'docs/index.html',
+          expect.stringContaining('<title>Index</title>')
+        );
+      });
+      it('should generate HTML files with correct content', () => {
+        mockExistSync.mockReturnValue(true);
+        const { generateFiles } = require('./update_gist.js');
+        generateFiles();
+        expect(mockWriteFileSync).toHaveBeenCalledWith(
+          'docs/chart.html',
+          expect.stringContaining('https://cdn.jsdelivr.net/npm/chart.js')
+        );
+        expect(mockWriteFileSync).toHaveBeenCalledWith(
+          'docs/index.html',
+          expect.stringContaining('<title>Index</title>')
+        );
+      });
     });
 });

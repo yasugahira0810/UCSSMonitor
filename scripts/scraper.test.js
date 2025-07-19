@@ -1,5 +1,6 @@
-import puppeteer from 'puppeteer';
-import { jest } from '@jest/globals';
+const fs = require('fs');
+const path = require('path');
+const puppeteer = require('puppeteer');
 
 const fsMock = {
     writeFileSync: jest.fn()
@@ -11,7 +12,7 @@ jest.unstable_mockModule('fs', () => ({
 }));
 
 // モックが設定された後にスクリプトをインポート
-const { logErrorDetails, isLoggedIn, login, waitForPostLoginElements, getRemainingData } = await import('./scraper.js');
+const { logErrorDetails, isLoggedIn, login, waitForPostLoginElements, getRemainingData } = require('./scraper.js');
 
 describe('scraper.js', () => {
     let browser;
@@ -33,8 +34,12 @@ describe('scraper.js', () => {
 
     beforeEach(() => {
         jest.clearAllMocks();
+        // scraper.jsのfs参照をテスト用モックに差し替え
+        const scraper = require('./scraper.js');
+        scraper.fs = fsMock;
     });
-    
+
+    // 1. logErrorDetails
     describe('logErrorDetails', () => {
         it('TS-01 TC-01-01: エラー詳細を正しくJSONファイルに出力する', async () => {
             const mockPage = { url: () => 'https://example.com' };
@@ -67,6 +72,7 @@ describe('scraper.js', () => {
         });
     });
 
+    // 2. isLoggedIn
     describe('isLoggedIn', () => {
         it('TS-02 TC-02-01: サービス詳細ボタンが存在する場合はtrueを返す', async () => {
             await page.setContent(`
@@ -89,6 +95,7 @@ describe('scraper.js', () => {
         });
     });
 
+    // 3. login
     describe('login', () => {
         it('TS-03 TC-03-01: メールまたはパスワードが未設定の場合はエラーをスローする', async () => {
             await expect(login(page, null, 'password'))
@@ -196,6 +203,7 @@ describe('scraper.js', () => {
         });
     });
 
+    // 4. waitForPostLoginElements
     describe('waitForPostLoginElements', () => {
         it('TS-04 TC-04-01: サービス詳細ボタンが表示されている場合はエラーをスローしない', async () => {
             // ボタンを含むHTMLをセット - セレクターと完全に一致するように修正
@@ -233,6 +241,7 @@ describe('scraper.js', () => {
         });
     });
 
+    // 5. getRemainingData
     describe('getRemainingData', () => {
         it('TS-05 TC-05-01: 残りデータ通信量を正常に取得できる', async () => {
             // HTML準備
@@ -317,6 +326,7 @@ describe('scraper.js', () => {
         });
     });
 
+    // 6. エッジケースとエラー処理
     describe('エッジケースとエラー処理', () => {
         it('TS-06 TC-06-01: タイムアウトエラーが適切に処理される', async () => {
             await page.setContent('<div>テストページ</div>');

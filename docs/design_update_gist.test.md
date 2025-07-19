@@ -189,3 +189,10 @@ npx jest update_gist.test.js
 ## 補足事項
 - 日付を含むテストでは、日付文字列の正確な一致を期待するのではなく、`expect.any(String)`や部分的な構造チェックを使用して柔軟性を持たせています。
 - エラーハンドリングテストでは、関数が例外をスローせずに正常に実行を完了することを期待しています。
+
+# OctokitのESM動的import対応について
+
+- @octokit/restはESM（ECMAScript Modules）形式で提供されているため、CommonJSのrequireでは読み込めません。
+- そのため、update_gist.jsでは`const { Octokit } = await import('@octokit/rest')`のようにdynamic importでOctokitを取得してください。
+- これにより、Node.jsのCommonJS環境でもESMモジュールを利用できます。
+- テストや本番コードの両方でこの方式を採用してください。

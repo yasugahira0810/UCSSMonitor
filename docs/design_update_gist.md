@@ -75,3 +75,27 @@ Gistにデータを更新し、グラフ表示のためのHTMLファイルを生
 - Chart.jsを使用したグラフ表示はCDNから読み込み
 - GitHub認証にはPersonal Access Token（GH_PAT）が必要
 - 生成されるHTMLはサンプルデータを使用した基本的なChart.js実装
+
+---
+
+# 変更履歴
+- 2025-07-19: CommonJS化・依存注入仕様を追記（作業ログ: 20250719_210220）
+
+# update_gist.js CommonJS化・依存注入仕様追記
+
+## 目的
+update_gist.jsをCommonJS形式（require/module.exports）に統一し、テスト・本番ともに安定して動作させる。
+
+## 仕様
+- ESM(import/export)ではなく、require/module.exports形式で記述する。
+- @octokit/rest, node-fetch, fs, path等もrequireで読み込む。
+- テスト時は依存モジュールのモック化が容易になる。
+- 既存のexport関数はmodule.exportsでエクスポートする。
+- テストファイルもrequire形式に統一する。
+
+# OctokitのESM動的import対応について
+
+- @octokit/restはESM（ECMAScript Modules）形式で提供されているため、CommonJSのrequireでは読み込めません。
+- そのため、update_gist.jsでは`const { Octokit } = await import('@octokit/rest')`のようにdynamic importでOctokitを取得してください。
+- これにより、Node.jsのCommonJS環境でもESMモジュールを利用できます。
+- テストや本番コードの両方でこの方式を採用してください。

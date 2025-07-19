@@ -1,28 +1,23 @@
-import { jest } from '@jest/globals';
+// fsとnode-fetchをグローバルにモック
+jest.mock('fs');
+// node-fetchのモックをdefaultエクスポートとして返す形に修正
+jest.mock('node-fetch', () => ({ __esModule: true, default: jest.fn() }));
+const fetch = require('node-fetch').default;
+
+const fs = require('fs');
+
+// fsMock, fetchMockをグローバルで参照
+const fsMock = fs;
+const fetchMock = fetch;
 
 // モックの設定
-const fsMock = {
-  mkdirSync: jest.fn(),
-  writeFileSync: jest.fn(),
-  appendFileSync: jest.fn()
-};
-
-const fetchMock = jest.fn();
-
-// モジュールをモック
-jest.unstable_mockModule('node-fetch', () => ({
-  default: fetchMock
-}));
-
-jest.unstable_mockModule('fs', () => ({
-  default: fsMock,
-  mkdirSync: fsMock.mkdirSync,
-  writeFileSync: fsMock.writeFileSync,
-  appendFileSync: fsMock.appendFileSync
-}));
+fs.mkdirSync = jest.fn();
+fs.writeFileSync = jest.fn();
+fs.appendFileSync = jest.fn();
+fetch.mockImplementation = jest.fn();
 
 // モックを設定した後にモジュールをインポート
-const generateGraphModule = await import('./generate_graph.js');
+const generateGraphModule = require('./generate_graph.js');
 const {
   filterHourlyData,
   getTimezoneInfo,
@@ -534,9 +529,10 @@ describe('generate_graph.js', () => {
   // --- TS-08: fetchDataFromGist関数の動作確認 ---
   describe('fetchDataFromGist', () => {
     beforeEach(() => {
+      jest.resetModules();
       jest.clearAllMocks();
     });
-    
+
     it('TS-08 TC-08-01: should fetch and return data successfully', async () => {
       const mockResponse = {
         ok: true,
@@ -544,38 +540,34 @@ describe('generate_graph.js', () => {
           { date: '2023-01-01T00:00:00Z', remainingData: '10.5' }
         ])
       };
-      
-      fetchMock.mockResolvedValue(mockResponse);
-      
+      jest.doMock('node-fetch', () => ({ __esModule: true, default: jest.fn().mockResolvedValue(mockResponse) }));
+      const { fetchDataFromGist } = require('./generate_graph.js');
       const result = await fetchDataFromGist('https://gist.github.com/user/id');
-      
-      expect(fetchMock).toHaveBeenCalledWith('https://gist.github.com/user/id/raw/data.json');
+      expect(require('node-fetch').default).toHaveBeenCalledWith('https://gist.github.com/user/id/raw/data.json');
       expect(result).toEqual([
         { date: '2023-01-01T00:00:00Z', remainingData: '10.5' }
       ]);
     });
-    
+
     it('TS-08 TC-08-02: should throw error on HTTP error', async () => {
       const mockResponse = {
         ok: false,
         status: 404
       };
-      
-      fetchMock.mockResolvedValue(mockResponse);
-      
+      jest.doMock('node-fetch', () => ({ __esModule: true, default: jest.fn().mockResolvedValue(mockResponse) }));
+      const { fetchDataFromGist } = require('./generate_graph.js');
       await expect(fetchDataFromGist('https://gist.github.com/user/id'))
         .rejects
         .toThrow('HTTP error! status: 404');
     });
-    
+
     it('TS-08 TC-08-03: should throw error on invalid data format', async () => {
       const mockResponse = {
         ok: true,
         json: jest.fn().mockResolvedValue({}) // 配列ではなくオブジェクトを返す
       };
-      
-      fetchMock.mockResolvedValue(mockResponse);
-      
+      jest.doMock('node-fetch', () => ({ __esModule: true, default: jest.fn().mockResolvedValue(mockResponse) }));
+      const { fetchDataFromGist } = require('./generate_graph.js');
       await expect(fetchDataFromGist('https://gist.github.com/user/id'))
         .rejects
         .toThrow('Invalid data format: expected an array');
@@ -779,28 +771,41 @@ describe('generate_graph.js', () => {
     let consoleLogMock;
     let consoleErrorMock;
     let processExitMock;
-    
+
     beforeEach(() => {
+      jest.resetModules();
+      jest.clearAllMocks();
       originalEnv = { ...process.env };
       originalConsole = { ...console };
-      
-      // 環境変数の設定
       process.env.GIST_USER = 'testuser';
       process.env.GIST_ID = 'testid';
-      
-      // コンソール出力とプロセス終了のモック
       consoleLogMock = jest.fn();
       consoleErrorMock = jest.fn();
       processExitMock = jest.fn();
-      
       console.log = consoleLogMock;
-      console.info = consoleLogMock; // console.infoも同じモック関数で上書き
+      console.info = consoleLogMock;
       console.error = consoleErrorMock;
       process.exit = processExitMock;
-      
-      jest.clearAllMocks();
-      
-      // fetchのモックをセットアップ
+    });
+
+    afterEach(() => {
+      process.env = originalEnv;
+      console = originalConsole;
+      jest.restoreAllMocks();
+    });
+
+    it('TS-12 TC-12-01: should process data flow correctly', async () => {
+      // fs.writeFileSyncのモックをdoMockで差し替え
+      jest.doMock('fs', () => ({
+        __esModule: true,
+        ...jest.requireActual('fs'),
+        writeFileSync: jest.fn((path, content) => {
+          console.log(`Chart HTML generated successfully at: ${path}`);
+          console.log(`Generated chart with 1 data points`);
+        }),
+        mkdirSync: jest.fn(),
+        appendFileSync: jest.fn()
+      }));
       const mockData = [
         { date: '2025-07-01T00:00:00Z', remainingData: '10.5' }
       ];
@@ -808,56 +813,18 @@ describe('generate_graph.js', () => {
         ok: true,
         json: jest.fn().mockResolvedValue(mockData)
       };
-      
-      fetchMock.mockResolvedValue(mockResponse);
-
-      // Date の適切なモック
-      const mockCurrentDate = new Date('2025-07-19T00:00:00Z');
-      const originalDate = global.Date;
-      global.Date = class extends originalDate {
-        constructor(dateString) {
-          if (dateString) {
-            return new originalDate(dateString);
-          }
-          return mockCurrentDate;
-        }
-        static now() {
-          return mockCurrentDate.getTime();
-        }
-      };
-    });
-    
-    afterEach(() => {
-      process.env = originalEnv;
-      console = originalConsole;
-      jest.restoreAllMocks();
-    });
-    
-    it('TS-12 TC-12-01: should process data flow correctly', async () => {
-      // モックでHTMLの生成ログを出力するように設定
-      fsMock.writeFileSync.mockImplementation((path, content) => {
-        console.log(`Chart HTML generated successfully at: ${path}`);
-        console.log(`Generated chart with 1 data points`);
-      });
-      
-      // テスト実行
+      jest.doMock('node-fetch', () => ({ __esModule: true, default: jest.fn().mockResolvedValue(mockResponse) }));
+      const { fetchAndProcessData } = require('./generate_graph.js');
       await fetchAndProcessData();
-      
-      // fetchの呼び出しを検証
-      expect(fetchMock).toHaveBeenCalledWith('https://gist.github.com/testuser/testid/raw/data.json');
-      
-      // コンソールログの内容を確認
+      expect(require('node-fetch').default).toHaveBeenCalledWith('https://gist.github.com/testuser/testid/raw/data.json');
       const allCalls = consoleLogMock.mock.calls.flat().join(' ');
       expect(allCalls).toContain('Chart HTML generated successfully at: ./docs/index.html');
     });
-    
+
     it('TS-12 TC-12-02: should handle errors gracefully', async () => {
-      // エラーを発生させるモック
-      fetchMock.mockRejectedValueOnce(new Error('Network error'));
-      
+      jest.doMock('node-fetch', () => ({ __esModule: true, default: jest.fn().mockRejectedValue(new Error('Network error')) }));
+      const { fetchAndProcessData } = require('./generate_graph.js');
       await fetchAndProcessData();
-      
-      // エラー処理を検証
       expect(consoleErrorMock).toHaveBeenCalledWith('Error occurred:', 'Network error');
       expect(processExitMock).toHaveBeenCalledWith(1);
     });

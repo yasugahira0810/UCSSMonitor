@@ -1,7 +1,15 @@
-import fs from 'fs';
-import fetch from 'node-fetch';
-import path from 'path';
-import { Octokit } from '@octokit/rest';
+const fs = require('fs');
+const fetch = require('node-fetch');
+const path = require('path');
+
+// OctokitはESMモジュールのため、dynamic importで取得
+async function getOctokitInstance() {
+  const { Octokit } = await import('@octokit/rest');
+  return new Octokit({ 
+    auth: process.env.GH_PAT,
+    request: { fetch }
+  });
+}
 
 const FILENAME = 'data.json';
 
@@ -10,10 +18,7 @@ const FILENAME = 'data.json';
  */
 async function updateGist() {
   try {
-    const octokit = new Octokit({ 
-      auth: process.env.GH_PAT,
-      request: { fetch }
-    });
+    const octokit = await getOctokitInstance();
 
     console.log(`Updating Gist at: https://gist.github.com/${process.env.GIST_USER}/${process.env.GIST_ID}`);
     
@@ -166,7 +171,7 @@ if (process.env.NODE_ENV !== 'test') {
 }
 
 // Export functions for testing purposes
-export {
+module.exports = {
   updateGist,
   fetchGistData,
   saveGistData,

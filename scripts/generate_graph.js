@@ -1,10 +1,11 @@
-import fs from 'fs';
-import fetch from 'node-fetch';
-import { dirname } from 'path';
-import { fileURLToPath } from 'url';
+const fs = require('fs');
+const fetch = require('node-fetch').default;
+const path = require('path');
+const { fileURLToPath } = require('url');
 
 // モジュールパスの設定
-const __dirname = dirname(fileURLToPath(import.meta.url));
+// CommonJSでは__dirnameがグローバルで定義されているため、再定義しない
+// const __dirname = path.dirname(__filename); // ←この行を削除
 
 // 定数定義
 const CONSTANTS = {
@@ -1103,13 +1104,12 @@ function generateAndSaveHtml(chartData, guidelineData, dateInfo, axisSettings, f
 }
 
 // メイン処理の実行
-// Only run in non-test environment
 if (process.env.NODE_ENV !== 'test') {
   fetchAndProcessData();
 }
 
-// Export functions for testing purposes
-export {
+// テスト用エクスポート
+module.exports = {
   fetchAndProcessData,
   fetchDataFromGist,
   filterHourlyData,
@@ -1119,5 +1119,5 @@ export {
   formatDate,
   formatDateForInput,
   generateAndSaveHtml,
-  processGitHubActions // Added explicit export for processGitHubActions
+  processGitHubActions
 };

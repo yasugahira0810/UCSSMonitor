@@ -1,6 +1,6 @@
-import puppeteer from 'puppeteer';
-import fs from 'fs';
-import dotenv from 'dotenv';
+const puppeteer = require('puppeteer');
+let fs = require('fs');
+const dotenv = require('dotenv');
 
 // .envファイルから環境変数を読み込む
 dotenv.config();
@@ -27,14 +27,14 @@ const URLS = {
 /**
  * Logs error details to a file
  */
-export const logErrorDetails = async (page, errorMessage) => {
+const logErrorDetails = async (page, errorMessage) => {
   const failureData = {
     date: new Date().toISOString(),
     status: 'エラー',
     error: errorMessage,
     url: page.url()
   };
-  fs.writeFileSync('error_details.json', JSON.stringify(failureData, null, 2));
+  module.exports.fs.writeFileSync('error_details.json', JSON.stringify(failureData, null, 2));
 };
 
 /**
@@ -56,14 +56,14 @@ const waitForSelector = async (page, selector, timeoutMs = TIMEOUT.short, errorM
 /**
  * Check if user is logged in
  */
-export const isLoggedIn = async (page) => {
+const isLoggedIn = async (page) => {
   return await waitForSelector(page, SELECTORS.serviceDetailsButton);
 };
 
 /**
  * Log in to the service
  */
-export const login = async (page, email, password) => {
+const login = async (page, email, password) => {
   try {
     if (!email || !password) {
       throw new Error('環境変数 UCSS_EMAIL または UCSS_PASSWORD が設定されていません');
@@ -103,7 +103,7 @@ export const login = async (page, email, password) => {
 /**
  * Wait for post-login page elements to load
  */
-export const waitForPostLoginElements = async (page) => {
+const waitForPostLoginElements = async (page) => {
   await waitForSelector(
     page, 
     SELECTORS.serviceDetailsButton, 
@@ -115,7 +115,7 @@ export const waitForPostLoginElements = async (page) => {
 /**
  * Extract and log the remaining data
  */
-export const getRemainingData = async (page) => {
+const getRemainingData = async (page) => {
   try {
     await page.click(SELECTORS.serviceDetailsButton);
     await waitForSelector(
@@ -134,35 +134,14 @@ export const getRemainingData = async (page) => {
   }
 };
 
-/**
- * Main execution function
- */
-async function main() {
-  const browser = await puppeteer.launch({ 
-    args: ['--no-sandbox', '--disable-setuid-sandbox'] 
-  });
-  const page = await browser.newPage();
-  
-  try {
-    const { UCSS_EMAIL: email, UCSS_PASSWORD: password } = process.env;
-    
-    if (!email || !password) {
-      throw new Error('GitHub Actions Secrets UCSS_EMAIL または UCSS_PASSWORD が設定されていません');
-    }
-    
-    await login(page, email, password);
-    await waitForPostLoginElements(page);
-    await getRemainingData(page);
-  } catch (error) {
-    console.error('エラー:', error.message);
-    process.exitCode = 1;
-  } finally {
-    await browser.close();
-  }
-}
-
-// Start the application
-main();
+module.exports = {
+  logErrorDetails,
+  isLoggedIn,
+  login,
+  waitForPostLoginElements,
+  getRemainingData,
+  fs // ← テスト時差し替え用
+};
 
 // Catch unhandled promise rejections
 process.on('unhandledRejection', (error) => {

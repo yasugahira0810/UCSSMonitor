@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "A web app to monitor UCSS data usage",
   "main": "src/main.js",
-  "type": "module",
+  "type": "commonjs",
   "scripts": {
     "start": "vue-cli-service serve",
     "build": "vue-cli-service build",

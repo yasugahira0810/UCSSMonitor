@@ -577,3 +577,30 @@ describe('エッジケースとエラー処理', () => {
 - HTML構造のバリエーションをシミュレート
 
 これらのテストケースを実装することで、scraper.jsの信頼性と保守性を高めることができます。
+
+---
+
+### 補足: Jest用fsモック仕様
+
+- Jestの自動モック機能（`__mocks__`ディレクトリ）を利用し、`fs`モジュールをモック化する。
+- 複数ファイルの内容を個別に保持できるよう、内部的に`{ [filePath]: content }`形式のオブジェクトで管理する。
+- `readFileSync`/`writeFileSync`はファイルパスごとに内容を読み書きできる。
+- テストごとにモック内容を初期化・取得できるヘルパー（`__setMockContent`, `__getMockContent`）も提供する。
+
+---
+
+# scraper.js テスト用fs依存注入仕様追記
+
+## 目的
+scraper.jsのテスト時、fsモジュールの参照をテスト側で差し替え可能にし、fsMockでの呼び出し検証を可能にする。
+
+## 仕様
+- scraper.jsはCommonJS形式とし、fs参照をmodule.exports.fs経由で上書きできるようにする。
+- テスト時はrequire後に`scraper.fs = fsMock`のように差し替えることで、logErrorDetails等の内部fs参照もモック化される。
+- 本番実行時は従来通りrequire('fs')が使われる。
+- これにより、logErrorDetails等のテストでfsMock.writeFileSyncの呼び出し検証が可能となる。
+
+---
+
+# 変更履歴
+- 2025-07-19: fs依存注入仕様を追記（作業ログ: 20250719_205234）

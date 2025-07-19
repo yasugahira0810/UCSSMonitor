@@ -1,7 +1,7 @@
-export default {
+module.exports = {
   transform: {},
   testEnvironment: 'node',
-  extensionsToTreatAsEsm: ['.ts'],
+  extensionsToTreatAsEsm: ['.ts'], // '.js'は削除
   moduleNameMapper: {
     '^(\\.{1,2}/.*)\\.js$': '$1',
   },
@@ -20,4 +20,4 @@ export default {
   collectCoverage: true,
   coverageReporters: ['html', 'text', 'lcov'],
   coverageDirectory: 'coverage',
-}
+};

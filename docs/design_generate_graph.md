@@ -162,3 +162,16 @@ HTML形式でインタラクティブなチャートを生成し、GitHub Action
 - Y軸最大値（yAxisMax）は、グラフの「開始日時～終了日時」内に存在するデータの最大値をもとに決定する。
 - 例：全期間の最大値が120GBでも、表示範囲内の最大値が100GBならyAxisMaxは100GBとなる。
 - calculateYAxisRange関数は、表示範囲内の最大値を引数として呼び出すこと。
+
+# モジュール形式の運用方針（2025/07/19追記）
+- 本スクリプト（generate_graph.js）は、Node.jsのテスト実行環境（Jest等）との互換性を考慮し、CommonJS形式（require/module.exports）で実装する。
+- ES Modules（import/export）形式は使用しない。
+- これにより、Jestによる単体テスト実行時のimport文エラー（SyntaxError: Cannot use import statement outside a module）を回避する。
+- 依存パッケージ（node-fetch等）もrequireで読み込むこと。
+
+# 変更履歴（2025/07/19追記）
+- モジュール形式をES Modules（import/export）からCommonJS（require/module.exports）に全面移行。
+- Jest等のテスト実行環境でimport文エラーが発生しないようにした。
+- 依存パッケージ（fs, node-fetch, path, url）はすべてrequireで読み込む。
+- テスト用エクスポートはmodule.exportsで明示的に記述。
+- これにより、generate_graph.test.jsのテストが正常に実行可能となる。
