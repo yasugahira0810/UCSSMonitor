@@ -305,23 +305,17 @@ function prepareChartData(filteredData, timezone, xMin = null, xMax = null) {
   let defaultXMax = rangeEnd.getTime();
 
   // 補助線・増加判定は全期間で
-  const hasDataIncrease = chartData.some((point, index) => {
-    if (index === 0) return false;
-    const prevPoint = chartData[index - 1];
-    return point.y > prevPoint.y;
-  });
+  let hasDataIncrease = false;
   const guidelineData = [];
-  if (hasDataIncrease) {
-    const increasePoint = chartData.find((point, index) => {
-      if (index === 0) return false;
-      const prevPoint = chartData[index - 1];
-      return point.y > prevPoint.y;
-    });
-    if (increasePoint) {
-      const guidelineEndDate = new Date(increasePoint.x);
+  for (let i = 1; i < chartData.length; i++) {
+    const prev = chartData[i - 1];
+    const curr = chartData[i];
+    if (curr.y > prev.y) {
+      hasDataIncrease = true;
+      const guidelineEndDate = new Date(curr.x);
       guidelineEndDate.setMonth(guidelineEndDate.getMonth() + 1);
       guidelineData.push(
-        { x: increasePoint.x, y: increasePoint.y },
+        { x: curr.x, y: curr.y },
         { x: guidelineEndDate.getTime(), y: 0 }
       );
     }

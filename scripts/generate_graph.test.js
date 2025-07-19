@@ -413,6 +413,36 @@ describe('generate_graph.js', () => {
       expect(result.guidelineData[1].y).toBe(0);
     });
 
+    it('should create multiple guideline segments for multiple data increases', () => {
+      const filteredData = [
+        { date: '2025-07-01T00:00:00Z', remainingData: '10.0' },
+        { date: '2025-07-02T00:00:00Z', remainingData: '8.0' },
+        { date: '2025-07-03T00:00:00Z', remainingData: '20.0' }, // 1回目増加
+        { date: '2025-07-04T00:00:00Z', remainingData: '18.0' },
+        { date: '2025-07-05T00:00:00Z', remainingData: '30.0' }, // 2回目増加
+        { date: '2025-07-06T00:00:00Z', remainingData: '28.0' }
+      ];
+      const timezone = 'UTC';
+      const result = prepareChartData(filteredData, timezone);
+      // 2回増加しているので、guidelineDataは4点（2本分）
+      expect(result.hasDataIncrease).toBe(true);
+      expect(result.guidelineData.length).toBe(4);
+      // 1本目
+      expect(result.guidelineData[0].x).toBe(new originalDate('2025-07-03T00:00:00Z').getTime());
+      expect(result.guidelineData[0].y).toBe(20.0);
+      const oneMonthAfter1 = new originalDate('2025-07-03T00:00:00Z');
+      oneMonthAfter1.setMonth(oneMonthAfter1.getMonth() + 1);
+      expect(result.guidelineData[1].x).toBe(oneMonthAfter1.getTime());
+      expect(result.guidelineData[1].y).toBe(0);
+      // 2本目
+      expect(result.guidelineData[2].x).toBe(new originalDate('2025-07-05T00:00:00Z').getTime());
+      expect(result.guidelineData[2].y).toBe(30.0);
+      const oneMonthAfter2 = new originalDate('2025-07-05T00:00:00Z');
+      oneMonthAfter2.setMonth(oneMonthAfter2.getMonth() + 1);
+      expect(result.guidelineData[3].x).toBe(oneMonthAfter2.getTime());
+      expect(result.guidelineData[3].y).toBe(0);
+    });
+
     it('should handle data with null or invalid remainingData values', () => {
       const filteredData = [
         { date: '2025-07-01T00:00:00Z', remainingData: '10.5' },
