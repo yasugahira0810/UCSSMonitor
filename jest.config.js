@@ -8,7 +8,7 @@ export default {
   transformIgnorePatterns: [
     'node_modules/(?!(debug|@puppeteer|puppeteer|puppeteer-core|@puppeteer/browsers)/)',
   ],
-  moduleFileExtensions: ['js', 'mjs', 'cjs', 'jsx', 'ts', 'tsx', 'json', 'node'],
+  moduleFileExtensions: ['js', 'cjs', 'jsx', 'ts', 'tsx', 'json', 'node'],
   testTimeout: 60000,
   setupFilesAfterEnv: [],
   forceExit: true,
@@ -16,5 +16,8 @@ export default {
   // Add these settings for better ES module compatibility
   testMatch: ['**/?(*.)+(spec|test).[jt]s?(x)'],
   runner: 'jest-runner',
-  verbose: true
+  verbose: true,
+  collectCoverage: true,
+  coverageReporters: ['html', 'text', 'lcov'],
+  coverageDirectory: 'coverage',
 }
