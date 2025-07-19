@@ -34,7 +34,7 @@ const logErrorDetails = async (page, errorMessage) => {
     error: errorMessage,
     url: page.url()
   };
-  module.exports.fs.writeFileSync('error_details.json', JSON.stringify(failureData, null, 2));
+  fs.writeFileSync('error_details.json', JSON.stringify(failureData, null, 2));
 };
 
 /**
