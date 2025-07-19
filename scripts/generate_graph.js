@@ -354,17 +354,26 @@ function prepareChartData(filteredData, timezone, xMin = null, xMax = null) {
 
 // Y軸の範囲を計算
 function calculateYAxisRange(maxValue) {
-  // maxValueに基づいて最大値を計算（50GBごとに区切る）
-  let yAxisMax = 50 * (Math.floor(maxValue / 50) + 1);
-  
-  // 最大値がデフォルト最大値より小さい場合はデフォルト最大値を使用
-  if (yAxisMax < CONSTANTS.Y_AXIS.DEFAULT_MAX) {
-    yAxisMax = CONSTANTS.Y_AXIS.DEFAULT_MAX;
+  // maxValueが0の場合はデフォルト最大値
+  if (maxValue === 0) {
+    return {
+      yAxisMin: CONSTANTS.Y_AXIS.DEFAULT_MIN,
+      yAxisMax: CONSTANTS.Y_AXIS.DEFAULT_MAX
+    };
   }
-  
-  // 最大値が上限を超えないようにする
+  // 50GB以下は50GB、100GB以下は100GB、150GB以下は150GB、それ以上は50GB刻みで切り上げ
+  let yAxisMax = maxValue;
+  if (maxValue <= 50) {
+    yAxisMax = 50;
+  } else if (maxValue <= 100) {
+    yAxisMax = 100;
+  } else if (maxValue <= 150) {
+    yAxisMax = 150;
+  } else {
+    yAxisMax = 50 * Math.ceil(maxValue / 50);
+  }
+  // 上限
   yAxisMax = Math.min(yAxisMax, CONSTANTS.Y_AXIS.MAX_LIMIT);
-  
   return {
     yAxisMin: CONSTANTS.Y_AXIS.DEFAULT_MIN,
     yAxisMax

@@ -481,7 +481,7 @@ describe('generate_graph.js', () => {
       const yAxisSettings = calculateYAxisRange(maxValue);
       expect(yAxisSettings).toEqual({
         yAxisMin: 0,
-        yAxisMax: 100,
+        yAxisMax: 50,
       });
     });
     it('should set 150 when value is between 100 and 150', () => {
