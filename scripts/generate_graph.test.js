@@ -38,10 +38,9 @@ const {
 
 // Simple tests that don't require mocking external modules
 describe('generate_graph.js', () => {
-  
-  // filterHourlyData のテスト
+  // --- TS-01: filterHourlyData関数の動作確認 ---
   describe('filterHourlyData', () => {
-    it('should filter data to one entry per hour', () => {
+    it('TS-01 TC-01-01: should filter data to one entry per hour', () => {
       const inputData = [
         { date: '2023-01-01T00:00:00Z', remainingData: '100' },
         { date: '2023-01-01T00:30:00Z', remainingData: '90' },
@@ -56,7 +55,7 @@ describe('generate_graph.js', () => {
       ]);
     });
 
-    it('should handle date changes correctly', () => {
+    it('TS-01 TC-01-02: should handle date changes correctly', () => {
       const inputData = [
         { date: '2023-01-01T23:30:00Z', remainingData: '50' },
         { date: '2023-01-02T00:00:00Z', remainingData: '45' },
@@ -71,13 +70,13 @@ describe('generate_graph.js', () => {
       ]);
     });
 
-    it('should handle empty array', () => {
+    it('TS-01 TC-01-03: should handle empty array', () => {
       const inputData = [];
       const filteredData = filterHourlyData(inputData);
       expect(filteredData).toEqual([]);
     });
 
-    it('should handle null or undefined data', () => {
+    it('TS-01 TC-01-04: should handle null or undefined data', () => {
       const inputData = null;
       const filteredData = filterHourlyData(inputData);
       expect(filteredData).toEqual([]);
@@ -88,14 +87,14 @@ describe('generate_graph.js', () => {
     });
   });
 
-  // getTimezoneInfo のテスト
+  // --- TS-02: getTimezoneInfo関数の動作確認 ---
   describe('getTimezoneInfo', () => {
     // 各テスト後に環境変数をリセット
     afterEach(() => {
       delete process.env.UTC_OFFSET;
     });
 
-    it('should return UTC by default', () => {
+    it('TS-02 TC-02-01: should return UTC by default', () => {
       delete process.env.UTC_OFFSET;
 
       const { timezone, timezoneDisplay } = getTimezoneInfo();
@@ -104,7 +103,7 @@ describe('generate_graph.js', () => {
       expect(timezoneDisplay).toBe('UTC+0');
     });
 
-    it('should return the correct timezone for a numeric offset', () => {
+    it('TS-02 TC-02-02: should return the correct timezone for a numeric offset', () => {
       process.env.UTC_OFFSET = '+9';
 
       const { timezone, timezoneDisplay } = getTimezoneInfo();
@@ -113,7 +112,7 @@ describe('generate_graph.js', () => {
       expect(timezoneDisplay).toBe('UTC+9');
     });
 
-    it('should return the correct timezone for a negative numeric offset', () => {
+    it('TS-02 TC-02-03: should return the correct timezone for a negative numeric offset', () => {
       process.env.UTC_OFFSET = '-5';
 
       const { timezone, timezoneDisplay } = getTimezoneInfo();
@@ -122,7 +121,7 @@ describe('generate_graph.js', () => {
       expect(timezoneDisplay).toBe('UTC-5');
     });
 
-    it('should return the correct timezone for a named timezone', () => {
+    it('TS-02 TC-02-04: should return the correct timezone for a named timezone', () => {
       process.env.UTC_OFFSET = 'Asia/Tokyo';
 
       const { timezone, timezoneDisplay } = getTimezoneInfo();
@@ -131,7 +130,7 @@ describe('generate_graph.js', () => {
       expect(timezoneDisplay).toBe('JST (UTC+9)');
     });
 
-    it('should handle unmapped named timezones', () => {
+    it('TS-02 TC-02-05: should handle unmapped named timezones', () => {
       process.env.UTC_OFFSET = 'America/Chicago';
 
       const { timezone, timezoneDisplay } = getTimezoneInfo();
@@ -141,9 +140,9 @@ describe('generate_graph.js', () => {
     });
   });
 
-  // formatDate のテスト
+  // --- TS-03: formatDate関数の動作確認 ---
   describe('formatDate', () => {
-    it('should format date correctly with UTC timezone', () => {
+    it('TS-03 TC-03-01: should format date correctly with UTC timezone', () => {
       const dateString = '2023-01-01T12:30:00Z';
       const timezone = 'UTC';
       
@@ -153,7 +152,7 @@ describe('generate_graph.js', () => {
       expect(result).toMatch(/\d+\/\d+\s\d+:\d+/);
     });
 
-    it('should format date correctly with different timezone', () => {
+    it('TS-03 TC-03-02: should format date correctly with different timezone', () => {
       const dateString = '2023-01-01T00:00:00Z';
       const timezone = 'Asia/Tokyo';
       
@@ -163,7 +162,7 @@ describe('generate_graph.js', () => {
       expect(result).toMatch(/\d+\/\d+\s\d+:\d+/);
     });
 
-    it('should handle invalid date string', () => {
+    it('TS-03 TC-03-03: should handle invalid date string', () => {
       const dateString = 'invalid-date';
       const timezone = 'UTC';
       
@@ -173,7 +172,7 @@ describe('generate_graph.js', () => {
     });
   });
 
-  // formatDateForInput のテスト
+  // --- TS-04: formatDateForInput関数の動作確認 ---
   describe('formatDateForInput', () => {
     // テスト前に元のDate実装を保存
     let originalDate;
@@ -186,7 +185,7 @@ describe('generate_graph.js', () => {
       global.Date = originalDate;
     });
 
-    it('should format date for HTML datetime-local input with UTC timezone', () => {
+    it('TS-04 TC-04-01: should format date for HTML datetime-local input with UTC timezone', () => {
       const date = new Date('2023-01-01T12:30:00Z');
       const timezone = 'UTC';
       
@@ -195,7 +194,7 @@ describe('generate_graph.js', () => {
       expect(result).toBe('2023-01-01T12:30');
     });
 
-    it('should format date for HTML datetime-local input with different timezone', () => {
+    it('TS-04 TC-04-02: should format date for HTML datetime-local input with different timezone', () => {
       // モックでタイムゾーン変換のテスト
       const mockDate = new Date('2023-01-01T00:00:00Z');
       // タイムゾーン変換のモック
@@ -210,7 +209,7 @@ describe('generate_graph.js', () => {
       expect(result).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/);
     });
 
-    it('should pad single digits with zeros', () => {
+    it('TS-04 TC-04-03: should pad single digits with zeros', () => {
       jest.spyOn(Intl, 'DateTimeFormat').mockImplementationOnce(() => ({
         formatToParts: () => [
           { type: 'year', value: '2023' },
@@ -233,7 +232,7 @@ describe('generate_graph.js', () => {
       expect(result).toBe('2023-02-03T04:05');
     });
 
-    it('should use fallback method when Intl methods fail', () => {
+    it('TS-04 TC-04-04: should use fallback method when Intl methods fail', () => {
       // Intl.DateTimeFormat.formatToPartsが例外をスローするように設定
       jest.spyOn(Intl, 'DateTimeFormat').mockImplementationOnce(() => ({
         formatToParts: () => { throw new Error('Intl error'); }
@@ -268,7 +267,7 @@ describe('generate_graph.js', () => {
       }
     });
 
-    it('should handle date string input', () => {
+    it('TS-04 TC-04-05: should handle date string input', () => {
       // 正しいDate実装でモックする
       global.Date = function(arg) {
         if (arg === '2023-04-20T16:45:00Z') {
@@ -294,7 +293,7 @@ describe('generate_graph.js', () => {
     });
   });
 
-  // prepareChartData のテスト
+  // --- TS-05: prepareChartData関数の動作確認 ---
   describe('prepareChartData', () => {
     const originalDate = global.Date;
     let originalEnv;
@@ -330,7 +329,7 @@ describe('generate_graph.js', () => {
       jest.clearAllMocks();
     });
     
-    it('should filter data to the current month and prepare chart data', () => {
+    it('TS-05 TC-05-01: should filter data to the current month and prepare chart data', () => {
       const filteredData = [
         { date: '2025-06-30T23:59:59Z', remainingData: '100' },
         { date: '2025-07-01T00:00:00Z', remainingData: '90' },
@@ -356,7 +355,7 @@ describe('generate_graph.js', () => {
       expect(result.dateInfo.lastDateFormatted).toBe('2025-07-31T23:59');
     });
     
-    it('should return an empty state if no data is available for the current month', () => {
+    it('TS-05 TC-05-02: should return an empty state if no data is available for the current month', () => {
       const filteredData = [
         { date: '2025-06-30T23:59:59Z', remainingData: '100' },
         { date: '2025-08-01T00:00:00Z', remainingData: '60' }
@@ -372,7 +371,7 @@ describe('generate_graph.js', () => {
       expect(result.axisSettings.yAxisMax).toBe(100); // デフォルト値が100に変更されたため修正
     });
 
-    it('should handle empty data array by returning an empty state', () => {
+    it('TS-05 TC-05-03: should handle empty data array by returning an empty state', () => {
       const filteredData = [];
       const timezone = 'UTC';
       
@@ -383,7 +382,7 @@ describe('generate_graph.js', () => {
       expect(result.hasDataIncrease).toBe(false);
     });
     
-    it('should adjust Y-axis settings for higher values', () => {
+    it('TS-05 TC-05-04: should adjust Y-axis settings for higher values', () => {
       const filteredData = [
         { date: '2025-07-01T00:00:00Z', remainingData: '120.5' },
         { date: '2025-07-02T00:00:00Z', remainingData: '100.8' }
@@ -395,7 +394,7 @@ describe('generate_graph.js', () => {
       expect(result.axisSettings.yAxisMax).toBe(150); // 最大値120.5, 100.8→150GB
     });
 
-    it('should create guideline data when data increase is detected', () => {
+    it('TS-05 TC-05-05: should create guideline data when data increase is detected', () => {
       const filteredData = [
         { date: '2025-07-01T00:00:00Z', remainingData: '10.5' },
         { date: '2025-07-02T00:00:00Z', remainingData: '8.7' },
@@ -413,7 +412,7 @@ describe('generate_graph.js', () => {
       expect(result.guidelineData[1].y).toBe(0);
     });
 
-    it('should create multiple guideline segments for multiple data increases', () => {
+    it('TS-05 TC-05-06: should create multiple guideline segments for multiple data increases', () => {
       const filteredData = [
         { date: '2025-07-01T00:00:00Z', remainingData: '10.0' },
         { date: '2025-07-02T00:00:00Z', remainingData: '8.0' },
@@ -443,7 +442,7 @@ describe('generate_graph.js', () => {
       expect(result.guidelineData[3].y).toBe(0);
     });
 
-    it('should handle data with null or invalid remainingData values', () => {
+    it('TS-05 TC-05-07: should handle data with null or invalid remainingData values', () => {
       const filteredData = [
         { date: '2025-07-01T00:00:00Z', remainingData: '10.5' },
         { date: '2025-07-02T01:00:00Z', remainingData: null },
@@ -460,7 +459,7 @@ describe('generate_graph.js', () => {
     });
   });
 
-  // prepareChartData null handling のテスト
+  // --- TS-06: prepareChartData null handling ---
   describe('prepareChartData null handling', () => {
     const originalDate = global.Date;
 
@@ -484,7 +483,7 @@ describe('generate_graph.js', () => {
       global.Date = originalDate;
     });
 
-    it('should handle data with null remainingData values', () => {
+    it('TS-06 TC-06-01: should handle data with null remainingData values', () => {
       const filteredData = [
         { date: '2025-07-01T00:00:00Z', remainingData: '10.5' },
         { date: '2025-07-02T01:00:00Z', remainingData: null },
@@ -504,9 +503,9 @@ describe('generate_graph.js', () => {
     });
   });
 
-  // calculateYAxisRange のテスト
+  // --- TS-07: calculateYAxisRange関数の動作確認 ---
   describe('calculateYAxisRange', () => {
-    it('should set 100 when value is below 100', () => {
+    it('TS-07 TC-07-01: should set 100 when value is below 100', () => {
       const maxValue = 30;
       const yAxisSettings = calculateYAxisRange(maxValue);
       expect(yAxisSettings).toEqual({
@@ -514,7 +513,7 @@ describe('generate_graph.js', () => {
         yAxisMax: 50,
       });
     });
-    it('should set 150 when value is between 100 and 150', () => {
+    it('TS-07 TC-07-02: should set 150 when value is between 100 and 150', () => {
       const maxValue = 120;
       const yAxisSettings = calculateYAxisRange(maxValue);
       expect(yAxisSettings).toEqual({
@@ -522,7 +521,7 @@ describe('generate_graph.js', () => {
         yAxisMax: 150,
       });
     });
-    it('should not exceed the maximum limit of 500', () => {
+    it('TS-07 TC-07-03: should not exceed the maximum limit of 500', () => {
       const maxValue = 600;
       const yAxisSettings = calculateYAxisRange(maxValue);
       expect(yAxisSettings).toEqual({
@@ -532,13 +531,13 @@ describe('generate_graph.js', () => {
     });
   });
 
-  // fetchDataFromGist のテスト（モックを使用）
+  // --- TS-08: fetchDataFromGist関数の動作確認 ---
   describe('fetchDataFromGist', () => {
     beforeEach(() => {
       jest.clearAllMocks();
     });
     
-    it('should fetch and return data successfully', async () => {
+    it('TS-08 TC-08-01: should fetch and return data successfully', async () => {
       const mockResponse = {
         ok: true,
         json: jest.fn().mockResolvedValue([
@@ -556,7 +555,7 @@ describe('generate_graph.js', () => {
       ]);
     });
     
-    it('should throw error on HTTP error', async () => {
+    it('TS-08 TC-08-02: should throw error on HTTP error', async () => {
       const mockResponse = {
         ok: false,
         status: 404
@@ -569,7 +568,7 @@ describe('generate_graph.js', () => {
         .toThrow('HTTP error! status: 404');
     });
     
-    it('should throw error on invalid data format', async () => {
+    it('TS-08 TC-08-03: should throw error on invalid data format', async () => {
       const mockResponse = {
         ok: true,
         json: jest.fn().mockResolvedValue({}) // 配列ではなくオブジェクトを返す
@@ -583,7 +582,7 @@ describe('generate_graph.js', () => {
     });
   });
   
-  // processGitHubActions のテスト
+  // --- TS-09: processGitHubActions関数の動作確認 ---
   describe('processGitHubActions', () => {
     let originalEnv;
     
@@ -596,7 +595,7 @@ describe('generate_graph.js', () => {
       process.env = originalEnv;
     });
     
-    it('should append data to GITHUB_OUTPUT in GitHub Actions environment', () => {
+    it('TS-09 TC-09-01: should append data to GITHUB_OUTPUT in GitHub Actions environment', () => {
       process.env.GITHUB_ACTIONS = 'true';
       process.env.GITHUB_OUTPUT = '/tmp/github_output';
       
@@ -612,7 +611,7 @@ describe('generate_graph.js', () => {
       );
     });
     
-    it('should not append data when not in GitHub Actions environment', () => {
+    it('TS-09 TC-09-02: should not append data when not in GitHub Actions environment', () => {
       delete process.env.GITHUB_ACTIONS;
       
       const data = [
@@ -625,7 +624,7 @@ describe('generate_graph.js', () => {
     });
   });
   
-  // generateAndSaveHtml のテスト
+  // --- TS-10: generateAndSaveHtml関数の動作確認 ---
   describe('generateAndSaveHtml', () => {
     let originalDate;
     let originalWriteFileSync;
@@ -650,7 +649,7 @@ describe('generate_graph.js', () => {
       fsMock.writeFileSync = originalWriteFileSync;
     });
     
-    it('should create directory and save HTML file', () => {
+    it('TS-10 TC-10-01: should create directory and save HTML file', () => {
       const chartData = [{ x: 1672531200000, y: 10.5 }];
       const dateInfo = {
         firstDate: { getTime: () => 1672531200000 },
@@ -681,7 +680,7 @@ describe('generate_graph.js', () => {
       }
     });
     
-    it('should include chart data in the HTML', () => {
+    it('TS-10 TC-10-02: should include chart data in the HTML', () => {
       const chartData = [{ x: 1672531200000, y: 10.5 }];
       const dateInfo = {
         firstDate: { getTime: () => 1672531200000 },
@@ -716,7 +715,7 @@ describe('generate_graph.js', () => {
     });
   });
 
-  // 新しいテスト：2週間後の日付を設定できるかを確認
+  // --- TS-11: generateAndSaveHtmlの将来日付対応 ---
   describe('generateAndSaveHtml with future dates', () => {
     let originalDate;
     
@@ -734,7 +733,7 @@ describe('generate_graph.js', () => {
       global.Date = originalDate;
     });
     
-    it('should allow setting end date up to 1 month in the future', () => {
+    it('TS-11 TC-11-01: should allow setting end date up to 1 month in the future', () => {
       // 2週間後の日付を作成
       const twoWeeksLater = new Date('2023-01-15T00:00:00Z');
       
@@ -773,7 +772,7 @@ describe('generate_graph.js', () => {
     });
   });
   
-  // fetchAndProcessData の統合テスト
+  // --- TS-12: fetchAndProcessData統合テスト ---
   describe('fetchAndProcessData', () => {
     let originalEnv;
     let originalConsole;
@@ -834,7 +833,7 @@ describe('generate_graph.js', () => {
       jest.restoreAllMocks();
     });
     
-    it('should process data flow correctly', async () => {
+    it('TS-12 TC-12-01: should process data flow correctly', async () => {
       // モックでHTMLの生成ログを出力するように設定
       fsMock.writeFileSync.mockImplementation((path, content) => {
         console.log(`Chart HTML generated successfully at: ${path}`);
@@ -852,7 +851,7 @@ describe('generate_graph.js', () => {
       expect(allCalls).toContain('Chart HTML generated successfully at: ./docs/index.html');
     });
     
-    it('should handle errors gracefully', async () => {
+    it('TS-12 TC-12-02: should handle errors gracefully', async () => {
       // エラーを発生させるモック
       fetchMock.mockRejectedValueOnce(new Error('Network error'));
       
@@ -864,9 +863,9 @@ describe('generate_graph.js', () => {
     });
   });
 
-  // 全期間データ範囲のdateInfo反映
+  // --- TS-13: 全期間データ範囲のdateInfo反映 ---
   describe('全期間データ範囲のdateInfo反映', () => {
-    it('should include allFirstDate and allLastDate in dateInfo for full data range', () => {
+    it('TS-13 TC-13-01: should include allFirstDate and allLastDate in dateInfo for full data range', () => {
       const filteredData = [
         { date: '2025-04-01T00:00:00Z', remainingData: '100' },
         { date: '2025-05-01T00:00:00Z', remainingData: '90' },
@@ -881,28 +880,9 @@ describe('generate_graph.js', () => {
     });
   });
 
-  // prepareChartData 月末終了日時のテスト
+  // --- TS-14: prepareChartData 月末終了日時 ---
   describe('prepareChartData 月末終了日時', () => {
-    const originalDate = global.Date;
-    beforeEach(() => {
-      // 2025-07-19を現在日時としてモック
-      const mockDate = new Date('2025-07-19T00:00:00Z');
-      global.Date = class extends originalDate {
-        constructor(dateString) {
-          if (dateString) {
-            return new originalDate(dateString);
-          }
-          return mockDate;
-        }
-        static now() {
-          return mockDate.getTime();
-        }
-      };
-    });
-    afterEach(() => {
-      global.Date = originalDate;
-    });
-    it('should set lastDate to end of month and lastDateFormatted to month end', () => {
+    it('TS-14 TC-14-01: should set lastDate to end of month and lastDateFormatted to month end', () => {
       const filteredData = [
         { date: '2025-07-01T00:00:00Z', remainingData: '10.0' },
         { date: '2025-07-19T00:00:00Z', remainingData: '8.0' }

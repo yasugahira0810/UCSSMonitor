@@ -95,8 +95,7 @@ describe('update_gist.js', () => {
     });
 
     describe('updateGist', () => {
-        // テストケース1: 新しいデータでGistを正常に更新できること
-        it('should update the Gist with new data', async () => {
+        it('TS-01 TC-01-01: 新しいデータでGistを正常に更新できること', async () => {
             const mockExistingData = [{ date: '2023-01-01T00:00:00.000Z', remainingData: 100 }];
             const mockNewDate = new Date('2023-01-02T00:00:00.000Z');
             
@@ -145,8 +144,7 @@ describe('update_gist.js', () => {
             global.Date.mockRestore();
         });
 
-        // テストケース2: エラーが発生した場合でも例外をスローせずに処理すること
-        it('should handle errors gracefully and exit', async () => {
+        it('TS-01 TC-01-02: エラーが発生した場合でも例外をスローせずに処理すること', async () => {
             const mockError = new Error('Failed to fetch Gist');
             mockError.response = { data: 'Error response data' };
             mockGistGet.mockRejectedValueOnce(mockError);
@@ -164,8 +162,7 @@ describe('update_gist.js', () => {
     });
 
     describe('fetchGistData', () => {
-        // テストケース1: Gistから既存データを正常に取得・解析できること
-        it('should fetch and parse existing Gist data', async () => {
+        it('TS-02 TC-02-01: Gistから既存データを正常に取得・解析できること', async () => {
             const mockData = [{ date: '2023-01-01T00:00:00.000Z', remainingData: 100 }];
 
             mockGistGet.mockResolvedValueOnce({
@@ -182,8 +179,7 @@ describe('update_gist.js', () => {
             expect(mockGistGet).toHaveBeenCalledWith({ gist_id: 'test-gist-id' });
         });
 
-        // テストケース2: Gistにファイルが見つからない場合にエラーをスローすること
-        it('should throw an error if no files are found in the Gist', async () => {
+        it('TS-02 TC-02-02: Gistにファイルが見つからない場合にエラーをスローすること', async () => {
             mockGistGet.mockResolvedValueOnce({ 
                 data: { 
                     files: {} 
@@ -195,8 +191,7 @@ describe('update_gist.js', () => {
                 .toThrow('No files found in the Gist');
         });
 
-        // テストケース3: Gistの内容が有効なJSONでない場合にエラーをスローすること
-        it('should throw an error if Gist content is not valid JSON', async () => {
+        it('TS-02 TC-02-03: Gistの内容が有効なJSONでない場合にエラーをスローすること', async () => {
             mockGistGet.mockResolvedValueOnce({
                 data: {
                     files: {
@@ -216,7 +211,7 @@ describe('update_gist.js', () => {
         });
         
         // テストケース4: GIST_IDが未定義の場合にエラーをスローすること
-        it('should throw an error if GIST_ID is not defined', async () => {
+        it('TS-02 TC-02-04: GIST_IDが未定義の場合にエラーをスローすること', async () => {
             // テスト内でモジュールを再読み込みするために元の環境変数を保存
             const originalGistId = process.env.GIST_ID;
             
@@ -239,8 +234,7 @@ describe('update_gist.js', () => {
     });
 
     describe('saveGistData', () => {
-        // テストケース1: 更新したデータをGistに正常に保存できること
-        it('should save updated data to the Gist', async () => {
+        it('TS-03 TC-03-01: 更新したデータをGistに正常に保存できること', async () => {
             const mockUpdatedData = [{ date: '2023-01-01T00:00:00.000Z', remainingData: 50 }];
 
             mockGistUpdate.mockResolvedValueOnce({});
@@ -272,8 +266,7 @@ describe('update_gist.js', () => {
     });
 
     describe('generateFiles', () => {
-        // テストケース1: ディレクトリが存在しない場合にHTMLファイルを正常に生成できること
-        it('should create directory and generate HTML files if directory does not exist', () => {
+        it('TS-04 TC-04-01: ディレクトリが存在しない場合にHTMLファイルを正常に生成できること', () => {
             // Directory does not exist
             mockExistSync.mockReturnValueOnce(false);
 
@@ -295,8 +288,7 @@ describe('update_gist.js', () => {
             expect(console.log).toHaveBeenCalledWith('index.html was generated in docs');
         });
 
-        // テストケース2: ディレクトリが既に存在する場合にHTMLファイルのみを生成すること
-        it('should not create the directory if it already exists', () => {
+        it('TS-04 TC-04-02: ディレクトリが既に存在する場合にHTMLファイルのみを生成すること', () => {
             // Directory already exists
             mockExistSync.mockReturnValueOnce(true);
 
