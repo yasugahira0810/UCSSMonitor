@@ -191,21 +191,32 @@ function formatDateForInput(date, timezone) {
     
     if (hour === '24') {
       hour = '00';
-      // 日付を1日進める必要がある場合の処理
-      const nextDay = new Date(date);
-      nextDay.setDate(nextDay.getDate() + 1);
-      const nextDayParts = new Intl.DateTimeFormat('en-US', {
-        timeZone: timezone,
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit'
-      }).formatToParts(nextDay);
+      // 24:00は翌日の00:00を意味するが、
+      // 月初の場合など、意図しない日付変更を避けるため
+      // 元の日付が既に正しい場合は日付を変更しない
+      const originalHour = date.getHours();
+      const originalMinutes = date.getMinutes();
       
-      nextDayParts.forEach(part => {
-        if (part.type === 'year') year = part.value;
-        if (part.type === 'month') month = part.value;
-        if (part.type === 'day') day = part.value;
-      });
+      // 元の時刻が00:00の場合は日付を進めない
+      if (originalHour === 0 && originalMinutes === 0) {
+        // そのまま現在の日付を使用
+      } else {
+        // それ以外の場合は日付を1日進める
+        const nextDay = new Date(date);
+        nextDay.setDate(nextDay.getDate() + 1);
+        const nextDayParts = new Intl.DateTimeFormat('en-US', {
+          timeZone: timezone,
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit'
+        }).formatToParts(nextDay);
+        
+        nextDayParts.forEach(part => {
+          if (part.type === 'year') year = part.value;
+          if (part.type === 'month') month = part.value;
+          if (part.type === 'day') day = part.value;
+        });
+      }
     }
 
     // Format the string
