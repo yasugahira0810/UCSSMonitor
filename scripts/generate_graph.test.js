@@ -855,7 +855,8 @@ describe('generate_graph.js', () => {
         { date: '2025-07-19T00:00:00Z', remainingData: '8.0' }
       ];
       const timezone = 'UTC';
-      const result = prepareChartData(filteredData, timezone);
+      // 基準日を7月中に明示指定
+      const result = prepareChartData(filteredData, timezone, undefined, undefined, '2025-07-19T00:00:00Z');
       // 月末 2025-07-31 23:59:59.999 UTC
       const expectedLastDate = new Date(Date.UTC(2025, 6, 31, 23, 59, 59, 999));
       expect(result.dateInfo.lastDate.getTime()).toBe(expectedLastDate.getTime());

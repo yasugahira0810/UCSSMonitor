@@ -96,11 +96,14 @@ HTML形式でインタラクティブなチャートを生成し、GitHub Action
   2. 年、月、日、時、分を抽出してフォーマット
   3. YYYY-MM-DDThh:mm形式の文字列を返す
 
-### prepareChartData(filteredData, timezone)
+### prepareChartData(filteredData, timezone, xMin = null, xMax = null, now = null)
 - 目的: グラフ描画用のデータ準備
 - 引数:
   - filteredData: フィルタリング済みデータ
   - timezone: タイムゾーン
+  - xMin: 表示範囲の開始日時（省略可）
+  - xMax: 表示範囲の終了日時（省略可）
+  - now: 基準日（省略可、テスト時などに指定。未指定時はnew Date()を使用）
 - 戻り値: グラフデータ、日付情報、軸設定を含むオブジェクト
 - 処理:
   1. 時間スケール用のデータマッピング（chartDataはGist全期間分を返す。デフォルトの表示範囲は今月分だが、UIで任意の期間を選択した場合はその範囲のみをChart.jsのmin/maxで制御する）

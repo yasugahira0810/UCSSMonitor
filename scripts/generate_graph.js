@@ -248,7 +248,7 @@ function formatDateForInput(date, timezone) {
 }
 
 // グラフデータの準備
-function prepareChartData(filteredData, timezone, xMin = null, xMax = null) {
+function prepareChartData(filteredData, timezone, xMin = null, xMax = null, nowArg = null) {
   // データがない場合は、空のグラフデータを返す
   if (!filteredData || filteredData.length === 0) {
     return {
@@ -274,7 +274,7 @@ function prepareChartData(filteredData, timezone, xMin = null, xMax = null) {
     .filter(dataPoint => dataPoint.y !== null && !isNaN(dataPoint.y));
 
   // デフォルトの表示範囲（今月分）
-  const now = new Date();
+  const now = nowArg ? new Date(nowArg) : new Date();
   const startOfMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
   const endOfMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0, 23, 59, 59, 999));
   const oneMonthFromNow = new Date(now.getTime());
