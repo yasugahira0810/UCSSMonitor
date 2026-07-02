@@ -28,7 +28,9 @@ const {
   generateAndSaveHtml,
   fetchDataFromGist,
   processGitHubActions,
-  fetchAndProcessData
+  fetchAndProcessData,
+  getNextContractRenewal,
+  getContractRenewalDay
 } = generateGraphModule;
 
 // Simple tests that don't require mocking external modules
@@ -861,6 +863,113 @@ describe('generate_graph.js', () => {
       const expectedLastDate = new Date(Date.UTC(2025, 6, 31, 23, 59, 59, 999));
       expect(result.dateInfo.lastDate.getTime()).toBe(expectedLastDate.getTime());
       expect(result.dateInfo.lastDateFormatted).toBe('2025-07-31T23:59');
+    });
+  });
+
+  // --- TS-15: getNextContractRenewal関数の動作確認 ---
+  describe('getNextContractRenewal', () => {
+    it('TS-15 TC-15-01: should add 1 month when renewalDay is null (従来動作)', () => {
+      const ts = new Date('2025-06-30T12:00:00Z').getTime();
+      const result = getNextContractRenewal(ts, null);
+      const expected = new Date('2025-06-30T12:00:00Z');
+      expected.setMonth(expected.getMonth() + 1);
+      expect(result.getTime()).toBe(expected.getTime());
+    });
+
+    it('TS-15 TC-15-02: should go to renewal day in same month when before renewal day', () => {
+      const ts = new Date('2025-06-05T10:00:00Z').getTime();
+      const result = getNextContractRenewal(ts, 7);
+      expect(result.getUTCFullYear()).toBe(2025);
+      expect(result.getUTCMonth()).toBe(5); // June = 5
+      expect(result.getUTCDate()).toBe(7);
+      expect(result.getUTCHours()).toBe(0);
+    });
+
+    it('TS-15 TC-15-03: should go to renewal day next month when on or after renewal day', () => {
+      const ts = new Date('2025-06-30T14:30:00Z').getTime();
+      const result = getNextContractRenewal(ts, 7);
+      expect(result.getUTCFullYear()).toBe(2025);
+      expect(result.getUTCMonth()).toBe(6); // July = 6
+      expect(result.getUTCDate()).toBe(7);
+      expect(result.getUTCHours()).toBe(0);
+    });
+
+    it('TS-15 TC-15-04: should handle year boundary correctly', () => {
+      const ts = new Date('2025-12-10T08:00:00Z').getTime();
+      const result = getNextContractRenewal(ts, 7);
+      expect(result.getUTCFullYear()).toBe(2026);
+      expect(result.getUTCMonth()).toBe(0); // January = 0
+      expect(result.getUTCDate()).toBe(7);
+    });
+
+    it('TS-15 TC-15-05: should clamp to last day of month when renewal day exceeds month length', () => {
+      const ts = new Date('2025-01-15T00:00:00Z').getTime();
+      const result = getNextContractRenewal(ts, 31);
+      // January has 31 days, so same month
+      expect(result.getUTCMonth()).toBe(0);
+      expect(result.getUTCDate()).toBe(31);
+
+      const ts2 = new Date('2025-02-01T00:00:00Z').getTime();
+      const result2 = getNextContractRenewal(ts2, 31);
+      // Feb 2025 has 28 days, so clamp to 28
+      expect(result2.getUTCMonth()).toBe(1); // February = 1
+      expect(result2.getUTCDate()).toBe(28);
+    });
+  });
+
+  // --- TS-16: prepareChartData with CONTRACT_RENEWAL_DAY ---
+  describe('prepareChartData with CONTRACT_RENEWAL_DAY', () => {
+    const originalDate = global.Date;
+    let originalEnv;
+
+    beforeEach(() => {
+      originalEnv = { ...process.env };
+      process.env.GIST_USER = 'testuser';
+      process.env.GIST_ID = 'testid';
+      process.env.GITHUB_ACTIONS = 'true';
+      process.env.GITHUB_OUTPUT = '/tmp/github_output';
+      process.env.UTC_OFFSET = '+0';
+      process.env.CONTRACT_RENEWAL_DAY = '7';
+
+      const mockDate = new Date('2025-07-01T00:00:00Z');
+      global.Date = class extends originalDate {
+        constructor(dateString) {
+          if (dateString) {
+            return new originalDate(dateString);
+          }
+          return mockDate;
+        }
+        static now() {
+          return mockDate.getTime();
+        }
+      };
+    });
+
+    afterEach(() => {
+      global.Date = originalDate;
+      process.env = originalEnv;
+      jest.clearAllMocks();
+    });
+
+    it('TS-16 TC-16-01: guideline line should end at contract renewal date (7/7)', () => {
+      // 6/30 に残量が減って、追加購入で増加 → 線は 6/30 → 7/7 に0
+      const filteredData = [
+        { date: '2025-06-28T00:00:00Z', remainingData: '10.0' },
+        { date: '2025-06-29T00:00:00Z', remainingData: '8.0' },
+        { date: '2025-06-30T00:00:00Z', remainingData: '20.0' },
+      ];
+      const timezone = 'UTC';
+      const result = prepareChartData(filteredData, timezone);
+
+      expect(result.hasDataIncrease).toBe(true);
+      expect(result.guidelineData.length).toBe(2);
+
+      const guidelineEnd = new Date(result.guidelineData[1].x);
+      expect(guidelineEnd.getUTCFullYear()).toBe(2025);
+      expect(guidelineEnd.getUTCMonth()).toBe(6); // July
+      expect(guidelineEnd.getUTCDate()).toBe(7);
+      expect(guidelineEnd.getUTCHours()).toBe(0);
+      expect(result.guidelineData[1].y).toBe(0);
     });
   });
 });

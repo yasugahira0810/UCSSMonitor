@@ -106,6 +106,7 @@ jobs:
           GIST_ID: ${{ secrets.GIST_ID }}
           GH_PAT: ${{ secrets.GH_PAT }}
           UTC_OFFSET: ${{ secrets.UTC_OFFSET }}
+          CONTRACT_RENEWAL_DAY: ${{ secrets.CONTRACT_RENEWAL_DAY }}
         run: npm run generate-graph
         
       - name: Verify build output

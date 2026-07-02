@@ -19,6 +19,12 @@ const CONSTANTS = {
   }
 };
 
+// 環境変数から契約更新日を取得（1-31、未設定ならnullで従来動作）
+function getContractRenewalDay() {
+  const val = process.env.CONTRACT_RENEWAL_DAY;
+  return val ? parseInt(val, 10) : null;
+}
+
 // タイムゾーンマッピング
 const TIMEZONE_MAP = {
   'Asia/Tokyo': 'JST (UTC+9)',
@@ -192,19 +198,11 @@ function formatDateForInput(date, timezone) {
     
     if (hour === '24') {
       hour = '00';
-      // 24:00は翌日の00:00を意味するが、
-      // 月初の場合など、意図しない日付変更を避けるため
-      // 元の日付が既に正しい場合は日付を変更しない
-      const originalHour = date.getHours();
-      const originalMinutes = date.getMinutes();
+      const originalHour = date.getUTCHours();
+      const originalMinutes = date.getUTCMinutes();
       
-      // 元の時刻が00:00の場合は日付を進めない
-      if (originalHour === 0 && originalMinutes === 0) {
-        // そのまま現在の日付を使用
-      } else {
-        // それ以外の場合は日付を1日進める
-        const nextDay = new Date(date);
-        nextDay.setDate(nextDay.getDate() + 1);
+      if (originalHour !== 0 || originalMinutes !== 0) {
+        const nextDay = new Date(date.getTime() + 86400000);
         const nextDayParts = new Intl.DateTimeFormat('en-US', {
           timeZone: timezone,
           year: 'numeric',
@@ -245,6 +243,35 @@ function formatDateForInput(date, timezone) {
       return `${year}-${month}-${day}T${hour}:${minute}`;
     }
   }
+}
+
+// 次の契約更新日を計算
+function getNextContractRenewal(fromTimestamp, renewalDay) {
+  if (renewalDay === null) {
+    const result = new Date(fromTimestamp);
+    result.setMonth(result.getMonth() + 1);
+    return result;
+  }
+  const d = new Date(fromTimestamp);
+  const currentDay = d.getUTCDate();
+  const currentMonth = d.getUTCMonth();
+  const currentYear = d.getUTCFullYear();
+
+  let targetYear, targetMonth;
+  if (currentDay < renewalDay) {
+    targetYear = currentYear;
+    targetMonth = currentMonth;
+  } else {
+    targetMonth = currentMonth + 1;
+    targetYear = currentYear;
+    if (targetMonth > 11) {
+      targetMonth = 0;
+      targetYear++;
+    }
+  }
+  const daysInMonth = new Date(Date.UTC(targetYear, targetMonth + 1, 0)).getUTCDate();
+  const actualDay = Math.min(renewalDay, daysInMonth);
+  return new Date(Date.UTC(targetYear, targetMonth, actualDay, 0, 0, 0, 0));
 }
 
 // グラフデータの準備
@@ -314,8 +341,7 @@ function prepareChartData(filteredData, timezone, xMin = null, xMax = null, nowA
     const curr = chartData[i];
     if (curr.y > prev.y) {
       hasDataIncrease = true;
-      const guidelineEndDate = new Date(curr.x);
-      guidelineEndDate.setMonth(guidelineEndDate.getMonth() + 1);
+      const guidelineEndDate = getNextContractRenewal(curr.x, getContractRenewalDay());
       guidelineData.push(
         { x: curr.x, y: curr.y },
         { x: guidelineEndDate.getTime(), y: 0 }
@@ -752,7 +778,7 @@ function generateAndSaveHtml(chartData, guidelineData, dateInfo, axisSettings, f
                             pointHoverRadius: 5
                         },
                         {
-                            label: 'データ容量増加時の補助線',
+                            label: 'データ容量増加時の補助線（契約更新日まで）',
                             data: guidelineData,
                             borderColor: 'rgba(255, 99, 132, 1)',
                             backgroundColor: 'rgba(255, 99, 132, 0.2)',
@@ -1119,5 +1145,7 @@ module.exports = {
   formatDate,
   formatDateForInput,
   generateAndSaveHtml,
-  processGitHubActions
+  processGitHubActions,
+  getNextContractRenewal,
+  getContractRenewalDay
 };
